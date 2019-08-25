@@ -1,8 +1,14 @@
 from bottle import Bottle, run, route, abort, request
-import os, json, requests, io
-import hashlib, hmac, base64
-import status
-
+import logging
+import os
+import json
+import requests
+import io
+import datetime
+import hashlib
+import hmac
+import base64
+import re
 
 # messaging api関連の変数。
 
@@ -11,8 +17,7 @@ YOUR_CHANNEL_SECRET = 'ここにチャンネルシークレットを入れる'
 
 # messaging apiのリプライに使う指定のURL
 reply_url = 'https://api.line.me/v2/bot/message/reply'
-# messaging apiのプッシュに使う指定のURL
-push_url = 'https://api.line.me/v2/bot/message/push'
+
 
 
 app = Bottle()
@@ -68,20 +73,101 @@ def reply_to_line(body):
         type = event['type']
 
         if type == 'message':
+
             message = event['message']
 
             if message['type'] == 'text':
-                responses.append(LineReplyMessage.make_text_response('ここに返すメッセージを入れる'))
 
-                # ボタン返すテスト「操作」or「確認」でテキストを返すボタンを返す
-                if message['text'] == '操作':
-                    responses.append(LineReplyMessage.make_confirm_response('はい', 'いいえ', '家電操作する？'))
-                elif message['text'] == '確認':
-                    responses.append(LineReplyMessage.make_confirm_response('はい', 'いいえ', '状態確認する？'))
+                user_input = message['text']
+
+
+                # メッセージが規定のものか調べる
+                with open('msg.json', 'r') as f:
+                    df = json.load(f)
+
+                    for msg in df.values():
+                        if user_input == msg:
+                            responses.append(
+                                LineReplyMessage.mainmenu_response())
+                            break
+                    else:
+                        responses.append(
+                            LineReplyMessage.make_text_response('メニュー見たいならメニューって入れろ'))
 
             else:
-                responses.append(LineReplyMessage.make_text_response('規定のテキストを入力してくれ。'))
-                # テキストでの返信内容を配列に追加
+                responses.append(
+                    LineReplyMessage.make_text_response('テキストで入力しろ'))
+
+
+
+        # ボタンによって送られてきたイベントを処理する
+        if type == 'postback':
+
+            postback_data = event['postback']['data']
+
+
+            # 家電を選ぶメニューを表示。これがメインメニュー。
+            if postback_data == 'select=manipulate':
+                responses.append(LineReplyMessage.kaden_response())
+
+
+            # 操作する家電を選ぶメニュー。
+            elif re.match(r'select=manipulate&kadenId=\d+', postback_data):
+
+                selected_kadenId = postback_data[26:]
+
+                responses.append(LineReplyMessage.make_text_response('家電' + selected_kadenId + '番を操作するよ'))
+                responses.append(LineReplyMessage.manipulate_response(selected_kadenId))
+
+
+            # ステータスを表示する処理
+            elif postback_data == 'select=status':
+                responses.append(LineReplyMessage.make_text_response('現在の家電の状態を表示する'))
+
+                # status取得し、表示する。
+
+
+            # 電源をONにする処理
+            elif re.match(r'action=on&kadenId=\d+', postback_data):
+                manipulated_on_kadenId = postback_data[18:]
+                responses.append(LineReplyMessage.make_text_response('家電' + manipulated_on_kadenId + '番の電源を入れるよ'))
+
+                # 選んだ家電の状態確認して電源をONにして、書き換える
+
+
+            # 電源をOFFにする処理
+            elif re.match(r'action=off&kadenId=\d+', postback_data):
+                manipulated_off_kadenId = postback_data[19:]
+                responses.append(LineReplyMessage.make_text_response('家電' + manipulated_off_kadenId + '番の電源を消すよ'))
+
+                # 選んだ家電の状態確認して電源をOFFにして、書き換える
+
+
+            # タイマーのモードを設定する画面
+            elif re.match(r'select=timer&kadenId=\d+', postback_data):
+                selected_timer_kadenId = postback_data[21:]
+                responses.append(LineReplyMessage.make_text_response('家電' + selected_timer_kadenId + '番のタイマーを設定するよ'))
+
+                responses.append(LineReplyMessage.timer_response(selected_timer_kadenId))
+
+            # 入タイマーの設定
+            elif re.match(r'action=timer&status=from&kadenId=\d+', postback_data):
+                selected_timer_kadenId = postback_data[35:]
+
+                responses.append(LineReplyMessage.make_text_response('〜時から点けるタイマーを設定する画面へ飛ばす'))
+
+            # 切タイマーの設定
+            elif re.match(r'action=timer&status=to&kadenId=\d+', postback_data):
+                selected_timer_kadenId = postback_data[33:]
+
+                responses.append(LineReplyMessage.make_text_response('〜時に消すタイマーを設定する画面へ飛ばす'))
+
+            # 間タイマーの設定
+            elif re.match(r'action=timer&status=from_to&kadenId=\d+', postback_data):
+                selected_timer_kadenId = postback_data[36:]
+
+                responses.append(LineReplyMessage.make_text_response('〜時から〜時まで点けておくタイマーを設定する画面へ飛ばす'))
+
 
         LineReplyMessage.send_reply(replyToken, responses)
         # トークンと配列を元に返信
@@ -90,27 +176,200 @@ def reply_to_line(body):
 class LineReplyMessage:
 
 
-    # 確認ボタン作成。
+    # メインメニュー
     @staticmethod
-    def make_confirm_response(text1, text2, text3):
+    def mainmenu_response():
         return {
-            'type': 'template',
-            'altText': 'this is a confirm template',
-            'template': {
-                'type': 'confirm',
-                'actions': [
+            "type": "flex",
+            "altText": "mainmenu",
+            "contents": {
+                "type": "bubble",
+                "body": {
+                    "type": "box",
+                    "layout": "vertical",
+                    "spacing": "md",
+                    "contents": [
+                        {
+                            "type": "button",
+                            "style": "primary",
+                            "action": {
+                                "type": "postback",
+                                "label": "家電操作",
+                                "data": "select=manipulate"
+                            }
+                        },
+                        {
+                            "type": "button",
+                            "style": "secondary",
+                            "action": {
+                                "type": "postback",
+                                "label": "状態確認",
+                                "data": "select=status"
+                            }
+                        }
+                    ]
+                }
+            }
+        }
+
+    # 操作家電洗濯画面
+    @staticmethod
+    def kaden_response():
+        return {
+            "type": "flex",
+            "altText": "flexmenu",
+            "contents": {
+                "type": "carousel",
+                "contents": [
                     {
-                        'type': 'message',
-                        'label': text1,
-                        'text': text1
+                        "type": "bubble",
+                        "body": {
+                            "type": "box",
+                            "layout": "horizontal",
+                            "contents": [
+                                {
+                                    "type": "text",
+                                    "text": "家電1"
+                                }
+                            ]
+                        },
+                        "footer": {
+                            "type": "box",
+                            "layout": "horizontal",
+                            "contents": [
+                                {
+                                    "type": "button",
+                                    "style": "primary",
+                                    "action": {
+                                        "type": "postback",
+                                        "label": "操作する",
+                                        "data": "select=manipulate&kadenId=1"
+                                    }
+                                }
+                            ]
+                        }
                     },
                     {
-                        'type': 'message',
-                        'label': text2,
-                        'text': text2
+                        "type": "bubble",
+                        "body": {
+                            "type": "box",
+                            "layout": "horizontal",
+                            "contents": [
+                                {
+                                    "type": "text",
+                                    "text": "家電2"
+                                }
+                            ]
+                        },
+                        "footer": {
+                            "type": "box",
+                            "layout": "horizontal",
+                            "contents": [
+                                {
+                                    "type": "button",
+                                    "style": "primary",
+                                    "action": {
+                                        "type": "postback",
+                                        "label": "操作する",
+                                        "data": "select=manipulate&kadenId=2"
+                                    }
+                                }
+                            ]
+                        }
                     }
-                ],
-                'text': text3
+                ]
+            }
+        }
+
+
+    # 選択した家電の操作画面
+    @staticmethod
+    def manipulate_response(selected_kadenId):
+        return {
+            "type": "flex",
+            "altText": "manipulate",
+            "contents": {
+                "type": "bubble",
+                "body": {
+                    "type": "box",
+                    "layout": "vertical",
+                    "spacing": "md",
+                    "contents": [
+                        {
+                            "type": "button",
+                            "style": "primary",
+                            "action": {
+                                "type": "postback",
+                                "label": "電源ON",
+                                "data": "action=on&kadenId=" + selected_kadenId
+                            }
+                        },
+                        {
+                            "type": "button",
+                            "style": "primary",
+                            "action": {
+                                "type": "postback",
+                                "label": "電源OFF",
+                                "data": "action=off&kadenId=" + selected_kadenId
+                            }
+                        },
+                        {
+                            "type": "button",
+                            "style": "secondary",
+                            "action": {
+                                "type": "postback",
+                                "label": "タイマー",
+                                "data": "select=timer&kadenId=" + selected_kadenId
+                            }
+                        }
+                    ]
+                }
+            }
+        }
+
+
+    # 選択した家電のタイマー設定画面
+    @staticmethod
+    def timer_response(selected_timer_kadenId):
+        return {
+            "type": "flex",
+            "altText": "timer",
+            "contents": {
+                "type": "bubble",
+                "body": {
+                    "type": "box",
+                    "layout": "vertical",
+                    "spacing": "md",
+                    "contents": [
+                        {
+                            "type": "button",
+                            "style": "secondary",
+                            "action": {
+                                "type": "postback",
+                                "label": "入",
+                                "data": "action=timer&status=from&kadenId=" + selected_timer_kadenId
+                            }
+                        },
+                        {
+                            "type": "button",
+                            "style": "secondary",
+                            "action": {
+                                "type": "postback",
+                                "label": "切",
+                                "data": "action=timer&status=to&kadenId=" + selected_timer_kadenId
+                            }
+                        },
+                        {
+                            "type": "button",
+                            "style": "secondary",
+                            "action": {
+                                "type": "postback",
+                                "label": "間",
+                                "data": "action=timer&status=from_to&kadenId=" + selected_timer_kadenId
+                            }
+                        }
+                    ]
+                }
             }
         }
 
