@@ -17,9 +17,11 @@ class remoteController():
             # とりあえずこれが動けば成功
             print('家電ID:' + kadenId + ' 操作ID：' + operationId)
 
+            infraRedSign = getInfraRedSign(kaden_id,operationId)
+
             # 実機じゃないと動かないのでコメントアウト。そのうちブランチ切る
             # 赤外線.jsonの読み出し
-            # infraRed = ir.send("")
+            ir.send(infraRedSign)
 
         except:
             result = False
@@ -28,5 +30,14 @@ class remoteController():
 
 
     # 赤外線信号の読み出しメソッド（Privateにしたい。
-    def getInfraRedSign(self, kaden_id, operation_id):
-        return "せきがいせんしんごうだよ"
+    def getInfraRedSign(self, kadenId, operationId):
+
+        f = open("infraRed.json", 'r')
+
+        infraRedJson = json.loads(f)
+
+        kaden = infraRedJson['1']
+
+        operation = kaden[operation_id]
+
+        return operation
