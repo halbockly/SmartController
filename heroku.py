@@ -15,12 +15,13 @@ import re
 YOUR_CHANNEL_ACCESS_TOKEN = 'ここにアクセストークンを入れる'
 YOUR_CHANNEL_SECRET = 'ここにチャンネルシークレットを入れる'
 
-# messaging apiのリプライに使う指定のURL
+# messaging api指定のURL
 reply_url = 'https://api.line.me/v2/bot/message/reply'
-
-
+push_url = 'https://api.line.me/v2/bot/message/push'
 
 app = Bottle()
+
+
 
 
 
@@ -89,6 +90,18 @@ def reply_to_line(body):
                         if user_input == msg:
                             responses.append(
                                 LineReplyMessage.mainmenu_response())
+
+                            # それぞれの家電の状態確認してjsonに反映するために、
+                            # ラズパイのindex.pyにリクエスト送って、jsonを更新
+
+                            # ngrokで指定されるURL
+                            target_url = ''
+
+                            # 状態確認して状態のjson更新する。paramはどうするか
+                            requests.get(
+                                target_url
+                            )
+
                             break
                     else:
                         responses.append(
@@ -104,7 +117,6 @@ def reply_to_line(body):
         if type == 'postback':
 
             postback_data = event['postback']['data']
-
 
             # 家電を選ぶメニューを表示。これがメインメニュー。
             if postback_data == 'select=manipulate':
@@ -124,7 +136,9 @@ def reply_to_line(body):
             elif postback_data == 'select=status':
                 responses.append(LineReplyMessage.make_text_response('現在の家電の状態を表示する'))
 
-                # status取得し、表示する。
+                # 状態が書かれているjsonを参照して、フレックスメッセージとかで表示。
+
+
 
 
             # 電源をONにする処理
@@ -135,38 +149,65 @@ def reply_to_line(body):
                 # 選んだ家電の状態確認して電源をONにして、書き換える
 
 
+                # kadenId　→　操作対象
+                # manipulateId → 1=ON, 2=OFF
+                kadenId = manipulated_on_kadenId
+                manipulateId = 1
+
+                # index.pyが受け取るURL
+                target_url = ''
+
+                # getでindex.pyに送信
+                requests.get(
+                    target_url,
+                    params={
+                        "kadenId": kadenId,
+                        "manipulateId": 1
+                    }
+                )
+
+
             # 電源をOFFにする処理
             elif re.match(r'action=off&kadenId=\d+', postback_data):
                 manipulated_off_kadenId = postback_data[19:]
                 responses.append(LineReplyMessage.make_text_response('家電' + manipulated_off_kadenId + '番の電源を消すよ'))
 
-                # 選んだ家電の状態確認して電源をOFFにして、書き換える
+
+                # kadenId　→　操作対象
+                # manipulateId → 1=ON, 2=OFF
+                kadenId = manipulated_off_kadenId
+                manipulateId = 2
+
+                # index.pyが受け取るURL
+                target_url = ''
+
+                # getでindex.pyに送信
+                requests.get(
+                    target_url,
+                    params={
+                        "kadenId": kadenId,
+                        "manipulateId": 2
+                    }
+                )
 
 
             # タイマーのモードを設定する画面
             elif re.match(r'select=timer&kadenId=\d+', postback_data):
                 selected_timer_kadenId = postback_data[21:]
-                responses.append(LineReplyMessage.make_text_response('家電' + selected_timer_kadenId + '番のタイマーを設定するよ'))
-
                 responses.append(LineReplyMessage.timer_response(selected_timer_kadenId))
+
 
             # 入タイマーの設定
             elif re.match(r'action=timer&status=from&kadenId=\d+', postback_data):
-                selected_timer_kadenId = postback_data[35:]
-
-                responses.append(LineReplyMessage.make_text_response('〜時から点けるタイマーを設定する画面へ飛ばす'))
+                selected_timer_kadenId = postback_data[33:]
+                postback_params = event['postback']['params']['datetime']
+                responses.append(LineReplyMessage.make_text_response(postback_params + 'から家電' + selected_timer_kadenId + '番を点けるよ'))
 
             # 切タイマーの設定
             elif re.match(r'action=timer&status=to&kadenId=\d+', postback_data):
-                selected_timer_kadenId = postback_data[33:]
-
-                responses.append(LineReplyMessage.make_text_response('〜時に消すタイマーを設定する画面へ飛ばす'))
-
-            # 間タイマーの設定
-            elif re.match(r'action=timer&status=from_to&kadenId=\d+', postback_data):
-                selected_timer_kadenId = postback_data[36:]
-
-                responses.append(LineReplyMessage.make_text_response('〜時から〜時まで点けておくタイマーを設定する画面へ飛ばす'))
+                selected_timer_kadenId = postback_data[31:]
+                postback_params = event['postback']['params']['datetime']
+                responses.append(LineReplyMessage.make_text_response(postback_params + 'まで家電' + selected_timer_kadenId + '番を点けるよ'))
 
 
         LineReplyMessage.send_reply(replyToken, responses)
@@ -175,6 +216,31 @@ def reply_to_line(body):
 
 class LineReplyMessage:
 
+    # タイマーメニュー
+    @staticmethod
+    def timer_response(selected_timer_kadenId):
+        return {
+            'type': 'template',
+            'altText': 'this is a timer test',
+            'template': {
+                'type': 'buttons',
+                'actions': [
+                    {
+                        "type":"datetimepicker",
+                        "label":"入",
+                        "data":"action=timer&status=from&kadenId=" + selected_timer_kadenId,
+                        "mode":"datetime"
+                    },
+                    {
+                        "type":"datetimepicker",
+                        "label":"切",
+                        "data":"action=timer&status=to&kadenId=" + selected_timer_kadenId,
+                        "mode":"datetime"
+                    }
+                ],
+                'text': '家電' + selected_timer_kadenId + '番のタイマーを設定'
+            }
+        }
 
     # メインメニュー
     @staticmethod
