@@ -1,13 +1,10 @@
 {
-  "_comment": "IDと内容に、それぞれ項目名を持たせたイメージ",
-  "kaden_id": 1,
-  "operation": {
-    "_comment": "電源切り替え",
-    "operationId": 1,
-    "infraRed": "せきがいせんしんごうだよ"
-  },
-  "_comment": "ID:内容で省略したイメージ",
+  "_comment": "家電ID:{OperationId : "赤外線信号"}",
   "1": {
+    "_comment": "電源切り替え",
+    "1": "せきがいせんしんごうだよ"
+  },
+  "2": {
     "_comment": "電源切り替え",
     "1": "せきがいせんしんごうだよ"
   }
