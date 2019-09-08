@@ -1,27 +1,25 @@
 from bottle import Bottle, run, route, abort, request
-import logging
 import os
 import json
 import requests
-import io
 import datetime
 import hashlib
 import hmac
 import base64
 import re
 
-# messaging api関連の変数。
 
-YOUR_CHANNEL_ACCESS_TOKEN = 'ここにアクセストークンを入れる'
-YOUR_CHANNEL_SECRET = 'ここにチャンネルシークレットを入れる'
+# heroku config.set 環境変数名="値" でherokuの環境変数を指定して、os.environで取れる。
+YOUR_CHANNEL_ACCESS_TOKEN = os.environ['YOUR_CHANNEL_ACCESS_TOKEN']
+YOUR_CHANNEL_SECRET = os.environ['YOUR_CHANNEL_SECRET']
 
-# messaging api指定のURL
+# line messaging api指定のリプライ、プッシュURL
 reply_url = 'https://api.line.me/v2/bot/message/reply'
 push_url = 'https://api.line.me/v2/bot/message/push'
 
+
+
 app = Bottle()
-
-
 
 
 
@@ -97,9 +95,10 @@ def reply_to_line(body):
                             # ngrokで指定されるURL
                             target_url = ''
 
-                            # 状態確認して状態のjson更新する。paramはどうするか
+                            # 状態確認して状態のjson更新する。manipulateId=0→ステータス確認
                             requests.get(
-                                target_url
+                                target_url,
+                                params={'manipulateId': 0}
                             )
 
                             break
@@ -128,6 +127,7 @@ def reply_to_line(body):
 
                 selected_kadenId = postback_data[26:]
 
+                # 操作する家電のIDをテキストで返し、操作画面を返す。
                 responses.append(LineReplyMessage.make_text_response('家電' + selected_kadenId + '番を操作するよ'))
                 responses.append(LineReplyMessage.manipulate_response(selected_kadenId))
 
@@ -137,8 +137,9 @@ def reply_to_line(body):
                 responses.append(LineReplyMessage.make_text_response('現在の家電の状態を表示する'))
 
                 # 状態が書かれているjsonを参照して、フレックスメッセージとかで表示。
-
-
+                # with open('status.json', r) as f:
+                #     status_data = f.read()
+                #     .....読み込んで、それぞれの家電の情報を表示するクラスのメソッドに渡す。
 
 
             # 電源をONにする処理
@@ -148,11 +149,9 @@ def reply_to_line(body):
 
                 # 選んだ家電の状態確認して電源をONにして、書き換える
 
-
                 # kadenId　→　操作対象
                 # manipulateId → 1=ON, 2=OFF
                 kadenId = manipulated_on_kadenId
-                manipulateId = 1
 
                 # index.pyが受け取るURL
                 target_url = ''
@@ -161,8 +160,8 @@ def reply_to_line(body):
                 requests.get(
                     target_url,
                     params={
-                        "kadenId": kadenId,
-                        "manipulateId": 1
+                        'kadenId': kadenId,
+                        'manipulateId': 1
                     }
                 )
 
@@ -176,7 +175,6 @@ def reply_to_line(body):
                 # kadenId　→　操作対象
                 # manipulateId → 1=ON, 2=OFF
                 kadenId = manipulated_off_kadenId
-                manipulateId = 2
 
                 # index.pyが受け取るURL
                 target_url = ''
@@ -185,8 +183,8 @@ def reply_to_line(body):
                 requests.get(
                     target_url,
                     params={
-                        "kadenId": kadenId,
-                        "manipulateId": 2
+                        'kadenId': kadenId,
+                        'manipulateId': 2
                     }
                 )
 
@@ -194,6 +192,8 @@ def reply_to_line(body):
             # タイマーのモードを設定する画面
             elif re.match(r'select=timer&kadenId=\d+', postback_data):
                 selected_timer_kadenId = postback_data[21:]
+
+                # タイマー設定画面を返す。
                 responses.append(LineReplyMessage.timer_response(selected_timer_kadenId))
 
 
@@ -203,11 +203,44 @@ def reply_to_line(body):
                 postback_params = event['postback']['params']['datetime']
                 responses.append(LineReplyMessage.make_text_response(postback_params + 'から家電' + selected_timer_kadenId + '番を点けるよ'))
 
+                # 入力した時間と選んだ家電IDをindexに渡す。
+                # 時刻は「2019-09-08T11:00」といった形式で返るためそのまま渡す。詳しい動作はテストボット参照
+                # timer_manipulateIdは、1=タイマーON, 2=タイマーOFF
+                kadenId = selected_timer_kadenId
+                timer_datetime = postback_params
+
+                target_url = ''
+
+                requests.get(
+                    target_url,
+                    params={
+                        'kadenId': kadenId,
+                        'timer_datetime': timer_datetime,
+                        'manipulateId': 3,
+                    }
+                )
+
             # 切タイマーの設定
             elif re.match(r'action=timer&status=to&kadenId=\d+', postback_data):
                 selected_timer_kadenId = postback_data[31:]
                 postback_params = event['postback']['params']['datetime']
                 responses.append(LineReplyMessage.make_text_response(postback_params + 'まで家電' + selected_timer_kadenId + '番を点けるよ'))
+
+                # 入力した時間と選んだ家電IDをindexに渡す。
+                # 時刻は「2019-09-08T11:00」といった形式で返るためそのまま渡す。詳しい動作はテストボット参照
+                kadenId = selected_timer_kadenId
+                timer_datetime = postback_params
+
+                target_url = ''
+
+                requests.get(
+                    target_url,
+                    params={
+                        'kadenId': kadenId,
+                        'timer_datetime': timer_datetime,
+                        'manipulateId': 4,
+                    }
+                )
 
 
         LineReplyMessage.send_reply(replyToken, responses)
@@ -278,7 +311,7 @@ class LineReplyMessage:
             }
         }
 
-    # 操作家電洗濯画面
+    # 操作家電選択画面
     @staticmethod
     def kaden_response():
         return {
@@ -448,7 +481,6 @@ class LineReplyMessage:
             'text': text
         }
 
-
     # リプライ定義
     @staticmethod
     def send_reply(replyToken, messages):
@@ -472,4 +504,5 @@ class LineReplyMessage:
 
 
 if __name__ == "__main__":
-    app.run(host='localhost', port=8080)
+    port = int(os.getenv('PORT'))
+    app.run(host='localhost', port=port, server='gunicorn')
