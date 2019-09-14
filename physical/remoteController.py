@@ -10,18 +10,18 @@ app = Bottle()
 class remoteController():
 
     # 操作メソッド
-    def execute(self, kadenId, operationId):
+    def execute(self, kadenId, infraRedId):
         result = True
 
         try:
             # とりあえずこれが動けば成功
-            print('家電ID:' + kadenId + ' 操作ID：' + operationId)
+            print('家電ID:' + kadenId + ' 赤外線ID：' + infraRedId)
 
-            # infraRedSign = getInfraRedSign(kaden_id,operationId)
+            # infraRedSign = getInfraRedSign(kaden_id,infraRedId)
 
             # 実機じゃないと動かないのでコメントアウト。そのうちブランチ切る
             # 赤外線.jsonの読み出し
-            ir.send(infraRedSign)
+            # ir.send(infraRedSign)
 
         except:
             result = False
@@ -30,16 +30,16 @@ class remoteController():
 
 
     # 赤外線信号 の取得
-    def getInfraRedSign(self, kadenId, operationId):
+    def getInfraRedSign(self, kadenId, infraRedId):
 
         # 読み取りモードで開く
         f = open("infraRed.json", 'r')
         # Jsonの取得
-        infraRedJson = json.loads(f)
+        infraRedId = json.loads(f)
         # 家電情報の取得
-        operationList = infraRedJson[kadenId]
+        infraRedList = infraRedJson[kadenId]
         # 赤外線の取得
-        infraRed = kaden[operationId]
+        infraRed = kaden[infraRedId]
 
         return infraRed
 
