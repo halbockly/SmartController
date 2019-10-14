@@ -1,14 +1,14 @@
 import index
 import json
 
-# status.jsonを読みこんだり書き換えたりする役割。
+# kaden.jsonを読みこんだり書き換えたりする役割。
 
-# status.jsonは[kadenId:1 , status:1 , kadenName:'TV'}の形での管理を想定。
+# kaden.jsonは[ ((kadenId))1 : { name:"クーラー" , signal:"赤外線信号" status:0((0=off,1=on)) } ]の形での管理を想定。
 
 def getStatusJSOM():
-    """status.jsonを取得する"""
-    # 含まれるであろう要素：kadenId , status , kadenName
-    openStatusJson = open('status.json', 'r')     # r:読み込み , w:書き込み , a:追記
+    """kaden.jsonを取得する"""
+    # 含まれるであろう要素：kadenId , name , signal , status
+    openStatusJson = open('kaden.json', 'r')     # r:読み込み , w:書き込み , a:追記
     loadStatusJson = json.load(openStatusJson)    # load関数で読みこんだJSONは辞書型データとなる。
     return loadStatusJson
 
@@ -32,7 +32,7 @@ def getRequestStatus():
 
 
 def changeStatusJson():
-    """status.jsonを書き換える"""
+    """kaden.jsonを書き換える"""
     # remoteController.py動かして家電を動かす　→　これはswitch.pyの役割なのでここではやらない。
-    # status.jsonのフラグ書き換え　→　これが役割。
+    # kaden.jsonのフラグ書き換え　→　これが役割。
     # getStatusJson()の中で呼び出されて使われる。
