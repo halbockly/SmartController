@@ -1,41 +1,29 @@
-import subprocess
-import time
+from bottle import Bottle, run, route, abort, request
+# とりあえずのサンプルソース（動作確認済み
 import configparser
 
-cmd = './ngrok http 8080 --log=stdout'
+app = Bottle()
 
-from subprocess import Popen, PIPE
+@app.route('/getNgrokuUrlToHeroku', method='POST')
+def callback():
 
-__ADDR__ = "addr="
-__STARTED_TUNNEL__ = "started tunnel"
+    # -------------------------------------------
+    # ここからlineからのアクセスか判別する処理
 
-url = ""
+    # bottleのデフォルトはio.BytesIO型になってしまうため変換
+    body = request.body
+    print(body)
 
-p = Popen(cmd.split(' '), stdout=PIPE, stderr=PIPE)
-time.sleep(1)
+    text_body = body.read().decode('UTF-8')
 
-for line in iter(p.stdout.readline, b''):
+    print(text_body)
 
-    decodeLine = line.rstrip().decode("utf8")
+    inifile = configparser.ConfigParser()
+    inifile.read("./settings/ngrokToHeroku.ini")
+    inifile.set("ngrok", "url", text_body)
 
-    msgIndex = decodeLine.find(__STARTED_TUNNEL__)
-    print(decodeLine)
+    return {'statusCode': 200, 'body': '{}'}
 
-    if (msgIndex != -1):
-        addrIndex = decodeLine.find(__ADDR__)
-        url = decodeLine[addrIndex + len(__ADDR__):]
-
-        print(url)
-
-        inifile = configparser.ConfigParser()
-        inifile.read("./settings/ngrokToHeroku.ini")
-
-        inifile.set("ngrok", "url", url)
-
-        print(inifile.get("ngrok", "url"))
-
-        break
-
-while (True):
-    print("mawateru")
-    time.sleep(1)
+if __name__ == "__main__":
+    port = 8080
+    app.run(host='localhost', port=port)

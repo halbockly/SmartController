@@ -15,7 +15,7 @@ class remoteController():
 
         try:
             # とりあえずこれが動けば成功
-            print('家電ID:' + kadenId  )
+            print('家電ID:' + kadenId)
 
             # infraRedSign = getInfraRedSign(kaden_id,infraRedId)
 
