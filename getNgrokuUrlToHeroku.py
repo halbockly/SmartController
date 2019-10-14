@@ -1,14 +1,7 @@
-import ConfigParser
 
-inifile = ConfigParser.SafeConfigParser()
-inifile.read("./setting/test.ini")
+# とりあえずのサンプルソース（動作確認済み
+import configparser
 
-
-
-_get(inifile, section, "hoge1")
-
-def _get(inifile):
-    try:
-        return inifile.get("", name)
-    except Exception, e:
-        return "error: could not read " + name
+inifile = configparser.ConfigParser()
+inifile.read("./settings/ngrokToHeroku.ini")
+print(inifile.get("ngrok", "url"))
