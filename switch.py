@@ -5,7 +5,7 @@ import json
 
 # 電源の入り切りをする子
 # と言っても、受け取ったリクエストをremoteController.pyに横流しするだけ
-# 電源のON/OFFの可否を受け、statusを変更したりしなかったり。
+# 電源のON/OFFの成否を受け、statusを変更したりしなかったり。
 # つまり、「電源の状態を切り替えて」という命令しか送らない。
 
 # 引数をどう設定するかは、前田くんが作る予定のindex.pyから見て使いやすいようにすること。
@@ -22,6 +22,8 @@ def getRequestStatus():
     """index.py もしくは cron からのリクエスト（JSON形式を想定）を取得"""
     openjson = open('request.json', 'r')
     loadJson = json.load(openjson)
+    return loadJson
 
 def orderChangingStatus():
     """remoteController.py に状態変更の命令を送る"""
+    loadJson = getRequestStatus()
