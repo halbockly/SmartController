@@ -47,6 +47,8 @@ for line in iter(p.stdout.readline, b''):
         response = requests.post(__REQUEST_URL__,data=url)
         break
 
+# このメソッドが終わるとngrokの起動状態も破棄されるのでとりあえず回しておく。
+# 何かheartbeatとか終了SEQとかここに入れておくといいかも
 while (True):
     time.sleep(1)
 
