@@ -1,29 +1,52 @@
-from bottle import Bottle, run, route, abort, request
-# とりあえずのサンプルソース（動作確認済み
+import subprocess
+import time
 import configparser
+import requests
 
-app = Bottle()
+# ----------------------------------------------------
+# Herokuに対してngrokのURLを送る為の部品
+# 再起動時デーモンから呼び出してもらう。
+#
 
-@app.route('/getNgrokuUrlToHeroku', method='POST')
-def callback():
+cmd = './ngrok http 8080 --log=stdout'
 
-    # -------------------------------------------
-    # ここからlineからのアクセスか判別する処理
+from subprocess import Popen, PIPE
 
-    # bottleのデフォルトはio.BytesIO型になってしまうため変換
-    body = request.body
-    print(body)
 
-    text_body = body.read().decode('UTF-8')
+# ngrokのSTDOUTに下記が現れたらURLが出力される。
+__STARTED_TUNNEL__ = "started tunnel"
+# 下記の値がURL
+__ADDR__ = "addr="
+# 取り出したURLの送信先
+__REQUEST_URL__ = "http://localhost:8080/getNgrokuUrlToHeroku"
 
-    print(text_body)
+url = ""
 
-    inifile = configparser.ConfigParser()
-    inifile.read("./settings/ngrokToHeroku.ini")
-    inifile.set("ngrok", "url", text_body)
+# ngrokのEXE?を起動する。起動待ちとして1秒待つ
+p = Popen(cmd.split(' '), stdout=PIPE, stderr=PIPE)
+time.sleep(1)
 
-    return {'statusCode': 200, 'body': '{}'}
+# pの中にSTDOUTへのPIPEが渡されるので
+# そこからリアルタイムで1行ずつ読み込み→解析する。
+for line in iter(p.stdout.readline, b''):
 
-if __name__ == "__main__":
-    port = 8080
-    app.run(host='localhost', port=port)
+    decodeLine = line.rstrip().decode("utf8")
+
+    # STDOUT内にstarted tunnel　が現れたら
+    msgIndex = decodeLine.find(__STARTED_TUNNEL__)
+    print(decodeLine)
+
+    # その行の addr= 以降がURLになる
+    if (msgIndex != -1):
+        addrIndex = decodeLine.find(__ADDR__)
+        url = decodeLine[addrIndex + len(__ADDR__):]
+
+        print(url)
+
+        #URLを送信する。※未検証　でもPOSTを送信するメソッドが.postなのはわかりやすくていいね。
+        response = requests.post(__REQUEST_URL__,data=url)
+        break
+
+while (True):
+    time.sleep(1)
+
