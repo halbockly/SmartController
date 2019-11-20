@@ -15,13 +15,13 @@ class remoteController():
 
         try:
             # とりあえずこれが動けば成功
-            print('家電ID:' + kadenId)
+            #print('家電ID:' + kadenId)
 
-            # infraRedSign = getInfraRedSign(kaden_id,infraRedId)
+            infraRedSign = getInfraRedSign(kaden_id)
 
             # 実機じゃないと動かないのでコメントアウト。そのうちブランチ切る
             # 赤外線.jsonの読み出し
-            # ir.send(infraRedSign)
+            ir.send(infraRedSign)
 
         except:
             result = False
@@ -35,13 +35,13 @@ class remoteController():
         # 読み取りモードで開く
         f = open("kaden.json", 'r')
         # Jsonの取得
-        infraRedId = json.loads(f)
+        kadenJson = json.loads(f)
         # 家電情報の取得
-        infraRedList = infraRedJson[kadenId]
+        kaden = kadenJson[kadenId]
         # 赤外線の取得
-        infraRed = kaden[infraRedId]
+        signal = kaden["signal"]
 
-        return infraRed
+        return signal
 
     # 赤外線信号の保存
     def saveInfraRed(self, port):
