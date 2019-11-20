@@ -1,3 +1,5 @@
+# -*- coding: utf-8 -*-
+
 import subprocess
 import time
 import configparser
@@ -8,7 +10,7 @@ import requests
 # 再起動時デーモンから呼び出してもらう。
 #
 
-cmd = './ngrok http 8080 --log=stdout'
+cmd = 'ngrok http 8080 --log=stdout'
 
 from subprocess import Popen, PIPE
 
@@ -16,7 +18,7 @@ from subprocess import Popen, PIPE
 # ngrokのSTDOUTに下記が現れたらURLが出力される。
 __STARTED_TUNNEL__ = "started tunnel"
 # 下記の値がURL
-__ADDR__ = "addr="
+__ADDR__ = "url="
 # 取り出したURLの送信先
 __REQUEST_URL__ = "http://localhost:8080/getNgrokuUrlToHeroku"
 
