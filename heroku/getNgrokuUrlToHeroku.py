@@ -1,9 +1,14 @@
 
 from bottle import Bottle, run, route, abort, request
-# とりあえずのサンプルソース（動作確認済み
+
 import configparser
+import os
 
 app = Bottle()
+
+# heroku config.set 環境変数名="値" でherokuの環境変数を指定して、os.environで取れる。
+YOUR_CHANNEL_ACCESS_TOKEN = os.environ['YOUR_CHANNEL_ACCESS_TOKEN']
+YOUR_CHANNEL_SECRET = os.environ['YOUR_CHANNEL_SECRET']
 
 @app.route('/getNgrokuUrlToHeroku', method='POST')
 def GetNgrokuUrlToHeroku():
