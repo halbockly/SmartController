@@ -7,10 +7,10 @@ import switch
 # やりとりするのは、input:index.py　、　output:cron　、　i/o:status.py
 
 class Timer():
-    def timerSetting(self,param):
+    def timerSetting(self,param):               # このメソッドを読んでもらえればタイマー予約します！多分
         sw = Switch()
         orderJson = sw.getRequestStatus(param)
-        orderForCron = makeOrder(orderJson)
+        makeOrder(orderJson)
 
     def makeOrder(self,orderJson):              # switch.pyに飛ばすJSONを作り、勢いでcrontabも書いてしまうメソッド？
         kadenId = orderJson['kadenId']
@@ -32,6 +32,13 @@ class Timer():
         mon = setTime.strftime('%m')  # 予定日時の月
         cron_str = '{} {} {} {} *'  # cronに設定する文字列のひな型。
         cron_cmd = cron_str.format(min,hou,day,mon)        # 予定日時と命令をセット。文字列完成。
+        command = 'python /home/switch.py'
+        tabfile = 'reserved.tab'  # 予定を書き込むファイル
+
+        cc = CrontabControl()
+        cc.write_job(command, cron_cmd, tabfile)
+        cc.read_jobs(tabfile)
+        cc.monitor_start()
 
 
 # 楽しい楽しいcronゾーン=================================================================================================
