@@ -6,16 +6,16 @@ import json
 
 class status():
     #index.py、switch.pyとのやり取り
+# index.py(switch.py)から受け取ったidのステータスを取得して返すメソッド====================================================
     def checkStatus(self,id):
-        """index.pyから受け取ったidのステータスを取得して返す"""
         loadRequestJson = getKadenStatus()              # kaden.JSONを取得
         resStatus = loadRequestJson[id]['status']       # リクエストのidの['status']を取得する
         return resStatus                                # レスポンス( 0 or 1 )を送る
 
 
     #switch.pyとのやり取り
+# kaden.jsonを書き換えるメソッド=========================================================================================
     def changeStatusJson(self,id):
-        """kaden.jsonを書き換える"""
         result = true                                   # 書き換え完了フラグ
         loadRequestJson = getKadenStatus()              # kaden.JSONを取得
         status = loadRequestJson[id]['status']          # リクエストのkadenIdのステータスを取得
@@ -37,8 +37,9 @@ class status():
 
 
     # class内の処理用メソッド
+# kaden.jsonそのものを取得するメソッド====================================================================================
     def getKadenStatus(self):
         """Kaden.JSONを取得する"""
-        openRequestJson = open('kaden.json', 'r')  # kaden.jsonを開く
-        loadRequestJson = json.load(openRequestJson)  # kaden.jsonを読み込む
-        return loadRequestJson
+        openRequestJson = open('kaden.json', 'r')       # kaden.jsonを開く
+        loadRequestJson = json.load(openRequestJson)    # kaden.jsonを読み込む
+        return loadRequestJson                          # kaden.jsonを返り値として返す

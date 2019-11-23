@@ -14,7 +14,10 @@ import status
 # 「既にON/OFFになっている」可能性も考慮すること。
 
 class switch():
-    def Switching(self,param):              # リクエストのJSON（{ kadenId:x, status:y }）を引数とする
+# kadenIdとmanipulateIdで家電を操作するメソッド。戻り値としてお言葉がもらえる。=============================================
+"""引数　：param { kadenId:x, manupilateId:y }"""
+"""戻り値：msg（文字列、処理結果を表す返答メッセージ）"""
+def Switching(self,param):              # リクエストのJSON（{ kadenId:x, manupilateId:y }）を引数とする
         orderJson = getRequestStatus(param) # リクエストのJSONをorderJsonに保持
         kadenId = orderJson["kadenId"]      # 操作したい家電のID
         orderStatus = orderJson["manipulateId"]   # どう操作したいか（1:ONにしたい、2:OFFにしたい）
@@ -48,15 +51,19 @@ class switch():
             return true                     # 求める状態と現在の状態が異なる⇒戻り値true
 
 
-    def kadenSwitching(self,kadenId):
-        """kadenIを引数にしてremoteController.pyに電源操作の命令を送る"""
+# kadenIdを引数にしてremoteController.pyに電源操作の命令を送るメソッド======================================================
+"""引数　：kadenId"""
+"""戻り値：result（true/false、赤外線送信の成否）"""
+def kadenSwitching(self,kadenId):
         rc = remoteController()
         result = rc.execute(kadenId)
         return result
 
 
+# index.py もしくは cron からのリクエスト（JSON形式を想定）を取得するメソッド===============================================
+"""引数　：param { kadenId:x, manupilateId:y }"""
+"""戻り値：loadjson（辞書型、引数のJSONデータをpythonで扱いやすいようにした状態）"""
     def getRequestStatus(self,param):
-        """index.py もしくは cron からのリクエスト（JSON形式を想定）を取得"""
         openjson = open(param, 'r')
         loadJson = json.load(openjson)
         return loadJson
