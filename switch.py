@@ -2,6 +2,7 @@
 import bottle
 import index
 import json
+import requests
 
 # 電源の入り切りをする子
 # と言っても、受け取ったリクエストをremoteController.pyに横流しするだけ
@@ -20,10 +21,15 @@ import json
 
 def getRequestStatus():
     """index.py もしくは cron からのリクエスト（JSON形式を想定）を取得"""
+    param = json.load(request.json)
     openjson = open('request.json', 'r')
     loadJson = json.load(openjson)
     return loadJson
 
 def orderChangingStatus():
     """remoteController.py に状態変更の命令を送る"""
-    loadJson = getRequestStatus()
+    loadJson = getRequestStatus()                    # JSON取得
+    url = 'remoteController.py'
+    params = json.dumps(loadJson)
+    headers = {'Content-Type': 'application/json'}
+    response = requests.post(url, params, headers)   # remoteController.pyにJSONを送る
