@@ -10,10 +10,28 @@ class Timer():
     def timerSetting(self,param):
         sw = Switch()
         orderJson = sw.getRequestStatus(param)
+        orderForCron = makeOrder(orderJson)
+
+    def makeOrder(self,orderJson):              # switch.pyに飛ばすJSONを作り、勢いでcrontabも書いてしまうメソッド？
         kadenId = orderJson['kadenId']
         order = orderJson['manipulateId']       # 3:TimerON 4:TimerOFF
         order = 1 if order == 3 else 2          # 1:ON 2:OFF
-        setTime = orderJson['timer_datetime']
+        setTime = orderJson['timer_datetime']   # cronで命令を飛ばす日時　例）'2019-09-08T11:00'
+
+        str = {
+            "kadenId": kadenId,
+            "manipulateId": order,
+        }
+        filename = kadenId + '-' + order + '-' + setTime + '.json'  # 指定日時にswitch.pyに飛んでいくJSONファイル（のファイル名）
+        f = open(filename, 'w')                 # 書き込みモードで上記ファイルを開く
+        json.dump(str, f, indent = '\t')        # str を書き込む
+
+        min = setTime.strftime('%M')  # 予定日時の分
+        hou = setTime.strftime('%H')  # 予定日時の時
+        day = setTime.strftime('%d')  # 予定日時の日
+        mon = setTime.strftime('%m')  # 予定日時の月
+        cron_str = '{} {} {} {} *'  # cronに設定する文字列のひな型。
+        cron_cmd = cron_str.format(min,hou,day,mon)        # 予定日時と命令をセット。文字列完成。
 
 
 # 楽しい楽しいcronゾーン=================================================================================================
