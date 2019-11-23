@@ -1,10 +1,22 @@
 # coding=utf-8
 from crontab import CronTab
-import index
+import switch
 
 # Linuxのタスクマネージャー「cron」にタイマー予約をセットする
 # cronがもし落ちてたらetcで再起動させて対応する必要がある
 # やりとりするのは、input:index.py　、　output:cron　、　i/o:status.py
+
+class Timer():
+    def timerSetting(self,param):
+        sw = Switch()
+        orderJson = sw.getRequestStatus(param)
+        kadenId = orderJson['kadenId']
+        order = orderJson['manipulateId']       # 3:TimerON 4:TimerOFF
+        order = 1 if order == 3 else 2          # 1:ON 2:OFF
+        setTime = orderJson['timer_datetime']
+
+
+# 楽しい楽しいcronゾーン=================================================================================================
 
 # cronの設定の仕方：分 時 日 月 曜 command  ワイルドカードは「*」、andは「,」、○毎は「n/n」、範囲は「n-n」
 # 例）10分毎＝（分のところに）*/10       例２）8時2分から20時2分まで3時間毎＝（分は）2 （時は）8-20/3

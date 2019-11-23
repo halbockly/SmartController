@@ -4,17 +4,21 @@ import json
 # kaden.jsonを読みこんだり書き換えたりする役割。
 # kaden.jsonは[ ((kadenId))1 : { name:"クーラー" , signal:"赤外線信号" status:0((0=off,1=on)) } ]の形での管理を想定。
 
-class status():
-    #index.py、switch.pyとのやり取り
-# index.py(switch.py)から受け取ったidのステータスを取得して返すメソッド====================================================
+class Status():
+    # ▼index.py、switch.pyとのやり取り▼
+    # index.py(switch.py)から受け取ったidのステータスを取得して返すメソッド================================================
+    """引数　：id（kadenId）"""
+    """戻り値：resStatus（0 or 1、kaden.jsonで確認した対象のステータス）"""
     def checkStatus(self,id):
         loadRequestJson = getKadenStatus()              # kaden.JSONを取得
         resStatus = loadRequestJson[id]['status']       # リクエストのidの['status']を取得する
         return resStatus                                # レスポンス( 0 or 1 )を送る
 
 
-    #switch.pyとのやり取り
-# kaden.jsonを書き換えるメソッド=========================================================================================
+    # ▼switch.pyとのやり取り▼
+    # kaden.jsonを書き換えるメソッド=====================================================================================
+    """引数　：id（kadenId）"""
+    """戻り値：result（true/false、kaden.jsonの対象のステータスの書き換え成否）"""
     def changeStatusJson(self,id):
         result = true                                   # 書き換え完了フラグ
         loadRequestJson = getKadenStatus()              # kaden.JSONを取得
@@ -36,10 +40,11 @@ class status():
         return result                                    # 書き換え完了フラグを返す
 
 
-    # class内の処理用メソッド
-# kaden.jsonそのものを取得するメソッド====================================================================================
+    # ▼class内の処理用メソッド▼
+    # kaden.jsonそのものを取得するメソッド================================================================================
+    """引数　：なし"""
+    """戻り値：loadRequestJson（ずばり、kaden.json）"""
     def getKadenStatus(self):
-        """Kaden.JSONを取得する"""
         openRequestJson = open('kaden.json', 'r')       # kaden.jsonを開く
         loadRequestJson = json.load(openRequestJson)    # kaden.jsonを読み込む
         return loadRequestJson                          # kaden.jsonを返り値として返す
