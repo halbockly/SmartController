@@ -21,23 +21,19 @@ class switch():
 
         bool = priorConfirmation(kadenId,orderStatus)         # status.pyへ現在の家電のステータス確認
         if bool:                                                # 既に求める状態になっている場合
-            if orderStatus == 1:                                # status=1なら「ON」、=2なら「OFF」の文字列をセット
-                str = "ON"
-            else:
-                str = "OFF"
+            str = "ON" if orderStatus == 1 else "OFF"           # status=1なら「ON」、=2なら「OFF」の文字列をセット
             msg = "既に" + str + "になっています"                 # 返答メッセージ
-            # index.pyに送る
+            return msg
         else:
             result = kadenSwitching(kadenId)                  # remoteController.pyへ赤外線送信依頼
             if result:                                          # 赤外線送信の成否
                 st = status()
-                st.changeStatusJson(kadenId)                    # 成功：status.pyへのステータス書き換え依頼
-                msg = "操作完了"
-                # status.pyに送る
+                rewrite = st.changeStatusJson(kadenId)          # 成功：status.pyへのステータス書き換え依頼
+                msg = "操作完了" if rewrite else "書換失敗"      # 書き換えの成否に応じてmsgをセット
+                return msg
             else:
-                msg = "操作失敗"                                 # 失敗：
-                # index.pyに送る
-
+                msg = "操作失敗"                                 # 失敗：赤外線送信失敗メッセージをセット
+                return msg
 
     # class内の処理用メソッド
     def priorConfirmation(self,kadenId,orderStatus):
