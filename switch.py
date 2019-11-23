@@ -3,33 +3,64 @@ import bottle
 import index
 import json
 import requests
+from physical.remoteController import remoteController
+import status
 
 # 電源の入り切りをする子
 # と言っても、受け取ったリクエストをremoteController.pyに横流しするだけ
-# 電源のON/OFFの成否を受け、statusを変更したりしなかったり。
 # つまり、「電源の状態を切り替えて」という命令しか送らない。
+# そのあと電源のON/OFFの成否を受け、statusを変更したりしなかったり。
 
-# 引数をどう設定するかは、前田くんが作る予定のindex.pyから見て使いやすいようにすること。
-
-# index.py →　switch.py　の流れと
-# index.py →　timer.py →　cron →　switch.py　の流れと
-# timer.py ←→　status.py ←→　switch.py　の流れがあって、最後にswitch.py　→　remoteController.pyに流れる
-
-# やりとりするのは、input:index.py , cron　、　output:remoteController.py　、　i/o:status.py
 # 「既にON/OFFになっている」可能性も考慮すること。
-# なので、「状態確認　→　状態変更/状態維持　（→　status書き換え）」がこのファイルのすべきこと。
 
-def getRequestStatus():
-    """index.py もしくは cron からのリクエスト（JSON形式を想定）を取得"""
-    param = json.load(request.json)
-    openjson = open('request.json', 'r')
-    loadJson = json.load(openjson)
-    return loadJson
+class switch():
+    def Switching(self,param):              # リクエストのJSON（{ kadenId:x, status:y }）を引数とする
+        orderJson = getRequestStatus(param) # リクエストのJSONをorderJsonに保持
+        kadenId = orderJson["kadenId"]      # 操作したい家電のID
+        orderStatus = orderJson["manipulateId"]   # どう操作したいか（1:ONにしたい、2:OFFにしたい）
 
-def orderChangingStatus():
-    """remoteController.py に状態変更の命令を送る"""
-    loadJson = getRequestStatus()                    # JSON取得
-    url = 'remoteController.py'
-    params = json.dumps(loadJson)
-    headers = {'Content-Type': 'application/json'}
-    response = requests.post(url, params, headers)   # remoteController.pyにJSONを送る
+        bool = priorConfirmation(kadenId,orderStatus)         # status.pyへ現在の家電のステータス確認
+        if bool:                                                # 既に求める状態になっている場合
+            if orderStatus == 1:                                # status=1なら「ON」、=2なら「OFF」の文字列をセット
+                str = "ON"
+            else:
+                str = "OFF"
+            msg = "既に" + str + "になっています"                 # 返答メッセージ
+            # index.pyに送る
+        else:
+            result = kadenSwitching(kadenId)                  # remoteController.pyへ赤外線送信依頼
+            if result:                                          # 赤外線送信の成否
+                st = status()
+                st.changeStatusJson(kadenId)                    # 成功：status.pyへのステータス書き換え依頼
+                msg = "操作完了"
+                # status.pyに送る
+            else:
+                msg = "操作失敗"                                 # 失敗：
+                # index.pyに送る
+
+
+    # class内の処理用メソッド
+    def priorConfirmation(self,kadenId,orderStatus):
+        """事前確認。現在の家電の状態を見てremoteContrpller.pyに命令を送るか決める"""
+        st = status()
+        nowStatus = st.checkStatus(kadenId) # ステータス確認依頼
+        if orderStatus == 1 and nowStatus == 1:        # 求める状態と現在の状態を比較
+            return false                    # 既に求める状態になっている⇒戻り値false
+        elif orderStatus == 2 and nowStatus == 0:
+            return false                    # 既に求める状態になっている⇒戻り値false
+        else:
+            return true                     # 求める状態と現在の状態が異なる⇒戻り値true
+
+
+    def kadenSwitching(self,kadenId):
+        """kadenIを引数にしてremoteController.pyに電源操作の命令を送る"""
+        rc = remoteController()
+        result = rc.execute(kadenId)
+        return result
+
+
+    def getRequestStatus(self,param):
+        """index.py もしくは cron からのリクエスト（JSON形式を想定）を取得"""
+        openjson = open(param, 'r')
+        loadJson = json.load(openjson)
+        return loadJson

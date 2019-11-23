@@ -1,38 +1,33 @@
-import index
+# coding=utf-8
 import json
 
 # kaden.jsonを読みこんだり書き換えたりする役割。
 
 # kaden.jsonは[ ((kadenId))1 : { name:"クーラー" , signal:"赤外線信号" status:0((0=off,1=on)) } ]の形での管理を想定。
 
-def getStatusJSOM():
-    """kaden.jsonを取得する"""
-    # 含まれるであろう要素：kadenId , name , signal , status
-    openStatusJson = open('kaden.json', 'r')     # r:読み込み , w:書き込み , a:追記
-    loadStatusJson = json.load(openStatusJson)    # load関数で読みこんだJSONは辞書型データとなる。
-    return loadStatusJson
-
-def getRequestStatus():
-    """index.py もしくは switch.py からのリクエスト（JSON形式を想定）を取得する"""
-    # 含まれるであろう要素：kadenId , manipulatedId (, from , to)
-    openRequestJson = open('request.json', 'r')     # r:読み込み , w:書き込み , a:追記
-    loadRequestJson = json.load(openRequestJson)    # load関数で読みこんだJSONは辞書型データとなる。
-
-    nowStatusJson = getStatusJSOM()
-    if loadRequestJson['manipulatedId'] != nowStatusJson['status'] and loadRequestJson['from'] == "" and loadRequestJson['to'] != "":
-        # リクエストと状態が異なる且つタイマー無しの場合
-        # switch.py に状態変更をさせる。成功したらchangeStatus()を行い、失敗したらその旨を伝える。
-
-    elif loadRequestJson['manipulatedId'] != nowStatusJson['status'] and loadRequestJson['from'] != "" and loadRequestJson['to'] == "":
-        # リクエストと状態が異なる且つ入タイマー付きの場合
-    elif loadRequestJson['manipulatedId'] != nowStatusJson['status'] and loadRequestJson['from'] == "" and loadRequestJson['to'] != "":
-        # リクエストと状態が異なる且つ切タイマー付きの場合
-    elif loadRequestJson['manipulatedId'] == nowStatusJson['status']:   # else: でも良さそう？
-        # リクエストと状態が合致している（状態変更の必要が無い場合）
+class status():
+    #index.py、switch.pyとのやり取り
+    def checkStatus(self,id):
+        """index.pyから受け取ったidのステータスを取得して返す"""
+        loadRequestJson = getKadenStatus()              # kaden.JSONを取得
+        resStatus = loadRequestJson[id]['status']       # リクエストのidの['status']を取得する
+        return resStatus                                # レスポンス( 0 or 1 )を送る
 
 
-def changeStatusJson():
-    """kaden.jsonを書き換える"""
-    # remoteController.py動かして家電を動かす　→　これはswitch.pyの役割なのでここではやらない。
-    # kaden.jsonのフラグ書き換え　→　これが役割。
-    # getStatusJson()の中で呼び出されて使われる。
+    #switch.pyとのやり取り
+    def changeStatusJson(self,id):
+        """kaden.jsonを書き換える"""
+        loadRequestJson = getKadenStatus()              # kaden.JSONを取得
+        status = loadRequestJson[id]['status']          # リクエストのkadenIdのステータスを取得
+        if status == 0:
+            loadRequestJson[id]['status'] = 1
+        elif status == 1:
+            loadRequestJson[id]['status'] = 0
+
+
+    # class内の処理用メソッド
+    def getKadenStatus(self):
+        """Kaden.JSONを取得する"""
+        openRequestJson = open('kaden.json', 'r')  # kaden.jsonを開く
+        loadRequestJson = json.load(openRequestJson)  # kaden.jsonを読み込む
+        return loadRequestJson
