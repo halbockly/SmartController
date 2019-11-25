@@ -116,27 +116,3 @@ def index():                                        #Main処理
 if __name__ == "__main__":
     #app.run(host='localhost', port=8080, debug=True, reloader=True)
     index()
-
-        print("家電状況の取得をします。")
-        target_url = ''
-        request.get(target_url, "sutats.pyから帰ってきたjson")
-
-    elif par.gatManipulateId() == 1:
-        print("電源ON")
-
-    elif par.gatManipulateId() == 2:
-        print("電源OFF")
-
-    elif par.gatManipulateId() == 3:
-        print(par.gatTimerDatetime() + "タイマーON")
-
-    elif par.gatManipulateId() == 4:
-        print(par.gatTimerDatetime() + "タイマーOFF")
-
-
-
-
-
-if __name__ == "__main__":
-    #app.run(host='localhost', port=8080, debug=True, reloader=True)
-    index()
