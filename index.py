@@ -7,7 +7,7 @@ app = Bottle()
 
 params = {
     'kadenId': 5,
-    'manipulateId': 0,
+    'manipulateId': 6,
     'timerDatetime': '2019-09-08T11:00'
 }
 
