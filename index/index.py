@@ -1,63 +1,6 @@
 from bottle import Bottle, run, route, abort, request
 import json
 import requests
-
-
-app = Bottle()
-
-params = {
-    'kadenId': 5,
-    'manipulateId': 6,
-    'timerDatetime': '2019-09-08T11:00'
-}
-
-class paramaters():
-    def __init__(self, kadenId, manipulateId, timerDatetime):
-        self.kadenId = kadenId
-        self.manipulateId = manipulateId
-        self.timerDatetime = timerDatetime
-
-    def gatKadenId(self):
-        return self.kadenId
-
-    def gatManipulateId(self):
-        return self.manipulateId
-
-    def gatTimerDatetime(self):
-        return self.timerDatetime
-
-#manipulateIdが0～4以外かのチェック。
-def ErrorCheckDeco(func):
-    def check():
-        par = paramaters(params["kadenId"], params["manipulateId"], params["timerDatetime"])
-        if par.gatManipulateId() < 0 or par.gatManipulateId() > 4:
-            print("存在しない命令です。")
-
-        else:
-            func()
-
-    return check
-
-
-
-
-
-#main処理
-#@app.route('/test', method='POST')
-@ErrorCheckDeco
-def index():
-
-    # heroku側からparamsの受け取り
-    # params = request.json.
-
-
-
-    par = paramaters(params["kadenId"], params["manipulateId"], params["timerDatetime"])
-
-    #command分岐
-    if par.gatManipulateId() == 0:from bottle import Bottle, run, route, abort, request
-import json
-import requests
 import indexDto
 import switch
 import timer
