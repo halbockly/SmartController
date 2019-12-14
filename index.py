@@ -39,6 +39,7 @@ def index():
     kadenId = params['kadenId']
     manipulateId = params['manipulateId']
     timerDatetime = params['timerDatetime']
+    timerDatetime = params['timerDatetime']
 
 
     #ステータス管理処理
