@@ -7,7 +7,7 @@ import hashlib
 import hmac
 import base64
 import re
-
+import configparser
 
 # heroku config.set 環境変数名="値" でherokuの環境変数を指定して、os.environで取れる。
 YOUR_CHANNEL_ACCESS_TOKEN = os.environ['YOUR_CHANNEL_ACCESS_TOKEN']
@@ -17,6 +17,8 @@ YOUR_CHANNEL_SECRET = os.environ['YOUR_CHANNEL_SECRET']
 reply_url = 'https://api.line.me/v2/bot/message/reply'
 push_url = 'https://api.line.me/v2/bot/message/push'
 
+ini = configparser.ConfigParser()
+ini.read('settings/ngrokToHeroku.ini', 'UTF-8')
 
 
 app = Bottle()
@@ -63,6 +65,12 @@ def callback():
 def reply_to_line(body):
 
 
+    # 家電名、状態、数などを取得
+    # kaden.jsonは同ディレクトリ？
+    kaden_json = open('kaden.json')
+    kaden_info = json.load(kaden_json)
+
+
     for event in body['events']:
         responses = []
 
@@ -81,27 +89,34 @@ def reply_to_line(body):
 
 
                 # メッセージが規定のものか調べる
+                # msg.jsonに規定メッセージ書く？
                 with open('msg.json', 'r') as f:
                     df = json.load(f)
 
                     for msg in df.values():
                         if user_input == msg:
-                            responses.append(
-                                LineReplyMessage.mainmenu_response())
 
                             # それぞれの家電の状態確認してjsonに反映するために、
                             # ラズパイのindex.pyにリクエスト送って、jsonを更新
 
                             # ngrokで指定されるURL
-                            target_url = ''
+                            target_url = ini['ngrok']['url']
+                            headers = {'Content-Type': 'application/json'}
 
                             # 状態確認して状態のjson更新する。manipulateId=0→ステータス確認
                             requests.get(
                                 target_url,
-                                params={'manipulateId': 0}
+                                params = {
+                                    'manipulateId': '0'
+                                }
+                                headers = headers
                             )
 
+                            responses.append(
+                                LineReplyMessage.mainmenu_response())
+
                             break
+
                     else:
                         responses.append(
                             LineReplyMessage.make_text_response('メニュー見たいならメニューって入れろ'))
@@ -119,7 +134,7 @@ def reply_to_line(body):
 
             # 家電を選ぶメニューを表示。これがメインメニュー。
             if postback_data == 'select=manipulate':
-                responses.append(LineReplyMessage.kaden_response())
+                responses.append(LineReplyMessage.kaden_response(kaden_info))
 
 
             # 操作する家電を選ぶメニュー。
@@ -128,24 +143,20 @@ def reply_to_line(body):
                 selected_kadenId = postback_data[26:]
 
                 # 操作する家電のIDをテキストで返し、操作画面を返す。
-                responses.append(LineReplyMessage.make_text_response('家電' + selected_kadenId + '番を操作するよ'))
+                responses.append(LineReplyMessage.make_text_response(kaden_info[selected_kadenId]['name'] + 'を操作するよ'))
                 responses.append(LineReplyMessage.manipulate_response(selected_kadenId))
 
 
             # ステータスを表示する処理
             elif postback_data == 'select=status':
-                responses.append(LineReplyMessage.make_text_response('現在の家電の状態を表示する'))
-
-                # 状態が書かれているjsonを参照して、フレックスメッセージとかで表示。
-                # with open('status.json', r) as f:
-                #     status_data = f.read()
-                #     .....読み込んで、それぞれの家電の情報を表示するクラスのメソッドに渡す。
+                # responses.append(LineReplyMessage.make_text_response('現在の家電の状態を表示する'))
+                responses.append(LineReplyMessage.show_status(kaden_info))
 
 
             # 電源をONにする処理
             elif re.match(r'action=on&kadenId=\d+', postback_data):
                 manipulated_on_kadenId = postback_data[18:]
-                responses.append(LineReplyMessage.make_text_response('家電' + manipulated_on_kadenId + '番の電源を入れるよ'))
+                responses.append(LineReplyMessage.make_text_response(kaden_info[manipulated_on_kadenId]['name'] + 'の電源を入れるよ'))
 
                 # 選んだ家電の状態確認して電源をONにして、書き換える
 
@@ -154,22 +165,26 @@ def reply_to_line(body):
                 kadenId = manipulated_on_kadenId
 
                 # index.pyが受け取るURL
-                target_url = ''
+                target_url = ini['ngrok']['url']
+                headers = {
+                    'Content-Type': 'application/json'
+                }
 
                 # getでindex.pyに送信
                 requests.get(
                     target_url,
-                    params={
-                        'kadenId': kadenId,
-                        'manipulateId': 1
-                    }
+                    params = {
+                        'kadenId': str(kadenId),
+                        'manipulateId': '1'
+                    },
+                    headers = headers
                 )
 
 
             # 電源をOFFにする処理
             elif re.match(r'action=off&kadenId=\d+', postback_data):
                 manipulated_off_kadenId = postback_data[19:]
-                responses.append(LineReplyMessage.make_text_response('家電' + manipulated_off_kadenId + '番の電源を消すよ'))
+                responses.append(LineReplyMessage.make_text_response(kaden_info[manipulated_off_kadenId]['name'] + 'の電源を消すよ'))
 
 
                 # kadenId　→　操作対象
@@ -177,15 +192,17 @@ def reply_to_line(body):
                 kadenId = manipulated_off_kadenId
 
                 # index.pyが受け取るURL
-                target_url = ''
+                target_url = ini['ngrok']['url']
+                headers = {'Content-Type': 'application/json'}
 
                 # getでindex.pyに送信
                 requests.get(
                     target_url,
-                    params={
-                        'kadenId': kadenId,
-                        'manipulateId': 2
-                    }
+                    params = {
+                        'kadenId': str(kadenId),
+                        'manipulateId': '2'
+                    },
+                    headers = headers
                 )
 
 
@@ -194,14 +211,14 @@ def reply_to_line(body):
                 selected_timer_kadenId = postback_data[21:]
 
                 # タイマー設定画面を返す。
-                responses.append(LineReplyMessage.timer_response(selected_timer_kadenId))
+                responses.append(LineReplyMessage.timer_response(kaden_info, selected_timer_kadenId))
 
 
             # 入タイマーの設定
             elif re.match(r'action=timer&status=from&kadenId=\d+', postback_data):
                 selected_timer_kadenId = postback_data[33:]
                 postback_params = event['postback']['params']['datetime']
-                responses.append(LineReplyMessage.make_text_response(postback_params + 'から家電' + selected_timer_kadenId + '番を点けるよ'))
+                responses.append(LineReplyMessage.make_text_response(postback_params + 'から' + kaden_info[selected_timer_kadenId]['name'] + 'を点けるよ'))
 
                 # 入力した時間と選んだ家電IDをindexに渡す。
                 # 時刻は「2019-09-08T11:00」といった形式で返るためそのまま渡す。詳しい動作はテストボット参照
@@ -209,37 +226,41 @@ def reply_to_line(body):
                 kadenId = selected_timer_kadenId
                 timer_datetime = postback_params
 
-                target_url = ''
+                target_url = ini['ngrok']['url']
+                headers = {'Content-Type': 'application/json'}
 
                 requests.get(
                     target_url,
-                    params={
-                        'kadenId': kadenId,
-                        'timer_datetime': timer_datetime,
-                        'manipulateId': 3,
-                    }
+                    params = {
+                        'kadenId': str(kadenId),
+                        'timer_datetime': str(timer_datetime),
+                        'manipulateId': '3',
+                    },
+                    headers = headers
                 )
 
             # 切タイマーの設定
             elif re.match(r'action=timer&status=to&kadenId=\d+', postback_data):
                 selected_timer_kadenId = postback_data[31:]
                 postback_params = event['postback']['params']['datetime']
-                responses.append(LineReplyMessage.make_text_response(postback_params + 'まで家電' + selected_timer_kadenId + '番を点けるよ'))
+                responses.append(LineReplyMessage.make_text_response(postback_params + 'まで' + kaden_info[selected_timer_kadenId]['name'] + 'を点けるよ'))
 
                 # 入力した時間と選んだ家電IDをindexに渡す。
                 # 時刻は「2019-09-08T11:00」といった形式で返るためそのまま渡す。詳しい動作はテストボット参照
                 kadenId = selected_timer_kadenId
                 timer_datetime = postback_params
 
-                target_url = ''
+                target_url = ini['ngrok']['url']
+                headers = {'Content-Type': 'application/json'}
 
                 requests.get(
                     target_url,
-                    params={
-                        'kadenId': kadenId,
-                        'timer_datetime': timer_datetime,
-                        'manipulateId': 4,
-                    }
+                    params = {
+                        'kadenId': str(kadenId),
+                        'timer_datetime': str(timer_datetime),
+                        'manipulateId': '4',
+                    },
+                    headers = headers
                 )
 
 
@@ -249,9 +270,12 @@ def reply_to_line(body):
 
 class LineReplyMessage:
 
+    # lineのリプライ先URL
+    ReplyEndpoint = reply_url
+
     # タイマーメニュー
     @staticmethod
-    def timer_response(selected_timer_kadenId):
+    def timer_response(kaden_info, selected_timer_kadenId):
         return {
             'type': 'template',
             'altText': 'this is a timer test',
@@ -271,7 +295,7 @@ class LineReplyMessage:
                         "mode":"datetime"
                     }
                 ],
-                'text': '家電' + selected_timer_kadenId + '番のタイマーを設定'
+                'text': kaden_info[selected_timer_kadenId]['name'] + 'のタイマーを設定'
             }
         }
 
@@ -313,70 +337,47 @@ class LineReplyMessage:
 
     # 操作家電選択画面
     @staticmethod
-    def kaden_response():
+    def kaden_response(kaden_info):
+
+        kaden_manipulate_list = []
+        for i in range(1, len(kaden_info)+1):
+            kaden_manipulate_list.append(
+                {
+                    "type": "bubble",
+                    "body": {
+                        "type": "box",
+                        "layout": "horizontal",
+                        "contents": [
+                            {
+                                "type": "text",
+                                "text": kaden_info[str(i)]['name']
+                            }
+                        ]
+                    },
+                    "footer": {
+                        "type": "box",
+                        "layout": "horizontal",
+                        "contents": [
+                            {
+                                "type": "button",
+                                "style": "primary",
+                                "action": {
+                                    "type": "postback",
+                                    "label": "操作する",
+                                    "data": "select=manipulate&kadenId=" + str(i)
+                                }
+                            }
+                        ]
+                    }
+                }
+            )
+
         return {
             "type": "flex",
             "altText": "flexmenu",
             "contents": {
                 "type": "carousel",
-                "contents": [
-                    {
-                        "type": "bubble",
-                        "body": {
-                            "type": "box",
-                            "layout": "horizontal",
-                            "contents": [
-                                {
-                                    "type": "text",
-                                    "text": "家電1"
-                                }
-                            ]
-                        },
-                        "footer": {
-                            "type": "box",
-                            "layout": "horizontal",
-                            "contents": [
-                                {
-                                    "type": "button",
-                                    "style": "primary",
-                                    "action": {
-                                        "type": "postback",
-                                        "label": "操作する",
-                                        "data": "select=manipulate&kadenId=1"
-                                    }
-                                }
-                            ]
-                        }
-                    },
-                    {
-                        "type": "bubble",
-                        "body": {
-                            "type": "box",
-                            "layout": "horizontal",
-                            "contents": [
-                                {
-                                    "type": "text",
-                                    "text": "家電2"
-                                }
-                            ]
-                        },
-                        "footer": {
-                            "type": "box",
-                            "layout": "horizontal",
-                            "contents": [
-                                {
-                                    "type": "button",
-                                    "style": "primary",
-                                    "action": {
-                                        "type": "postback",
-                                        "label": "操作する",
-                                        "data": "select=manipulate&kadenId=2"
-                                    }
-                                }
-                            ]
-                        }
-                    }
-                ]
+                "contents": kaden_manipulate_list
             }
         }
 
@@ -427,48 +428,59 @@ class LineReplyMessage:
         }
 
 
-    # 選択した家電のタイマー設定画面
     @staticmethod
-    def timer_response(selected_timer_kadenId):
+    def show_status(kaden_info):
+
+        kaden_status_list = []
+        for i in range(1, len(kaden_info)+1):
+
+            if kaden_info[str(i)]['status'] == '1':
+                kaden_status = '電源ON'
+            else:
+                kaden_status = '電源OFF'
+
+            kaden_status_list.append(
+                {
+                    "type": "bubble",
+                    "header": {
+                        "type": "box",
+                        "layout": "horizontal",
+                        "contents": [
+                            {
+                                "type": "text",
+                                "text": "家電名 : " + kaden_info[str(i)]['name']
+                            }
+                        ]
+                    },
+                    "body": {
+                        "type": "box",
+                        "layout": "horizontal",
+                        "contents": [
+                            {
+                                "type": "text",
+                                "text": "状態 : " + kaden_status
+                            }
+                        ]
+                    },
+                    "footer": {
+                        "type": "box",
+                        "layout": "horizontal",
+                        "contents": [
+                            {
+                                "type": "text",
+                                "text": "信号 : " + kaden_info[str(i)]['signal']
+                            }
+                        ]
+                    }
+                }
+            )
+
         return {
             "type": "flex",
-            "altText": "timer",
+            "altText": "show_status",
             "contents": {
-                "type": "bubble",
-                "body": {
-                    "type": "box",
-                    "layout": "vertical",
-                    "spacing": "md",
-                    "contents": [
-                        {
-                            "type": "button",
-                            "style": "secondary",
-                            "action": {
-                                "type": "postback",
-                                "label": "入",
-                                "data": "action=timer&status=from&kadenId=" + selected_timer_kadenId
-                            }
-                        },
-                        {
-                            "type": "button",
-                            "style": "secondary",
-                            "action": {
-                                "type": "postback",
-                                "label": "切",
-                                "data": "action=timer&status=to&kadenId=" + selected_timer_kadenId
-                            }
-                        },
-                        {
-                            "type": "button",
-                            "style": "secondary",
-                            "action": {
-                                "type": "postback",
-                                "label": "間",
-                                "data": "action=timer&status=from_to&kadenId=" + selected_timer_kadenId
-                            }
-                        }
-                    ]
-                }
+                "type": "carousel",
+                "contents": kaden_status_list
             }
         }
 
