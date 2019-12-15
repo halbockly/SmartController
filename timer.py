@@ -1,42 +1,43 @@
 # coding=utf-8
 from crontab import CronTab
 import switch
+import logging
 
 # Linuxのタスクマネージャー「cron」にタイマー予約をセットする
 # cronがもし落ちてたらetcで再起動させて対応する必要がある
 # やりとりするのは、input:index.py　、　output:cron　、　i/o:status.py
 
-class Timer():
-    def timerSetting(self,param):               # このメソッドを読んでもらえればタイマー予約します！多分
+class Timer:
+    def timerSetting(self, param):               # このメソッドを読んでもらえればタイマー予約します！多分
         sw = Switch()
         orderJson = sw.getRequestStatus(param)
         makeOrder(orderJson)
 
-    def makeOrder(self,orderJson):              # switch.pyに飛ばすJSONを作り、勢いでcrontabも書いてしまうメソッド？
+    def makeOrder(self, orderJson):              # switch.pyに飛ばすJSONを作り、勢いでcrontabも書いてしまうメソッド
         kadenId = orderJson['kadenId']
         order = orderJson['manipulateId']       # 3:TimerON 4:TimerOFF
-        order = 1 if order == 3 else 2          # 1:ON 2:OFF
+        order = 1 if order == 3 else 2          # 1:ON 2:OFF    ※order=3なら1を、そうでないなら2をセットする
         setTime = orderJson['timer_datetime']   # cronで命令を飛ばす日時　例）'2019-09-08T11:00'
 
-        str = {
+        json_str = {
             "kadenId": kadenId,
             "manipulateId": order,
         }
-        filename = kadenId + '-' + order + '-' + setTime + '.json'  # 指定日時にswitch.pyに飛んでいくJSONファイル（のファイル名）
+        filename = kadenId + '_' + order + '_' + setTime + '.json'  # 指定日時にswitch.pyに飛んでいくJSONファイル（のファイル名）
         f = open(filename, 'w')                 # 書き込みモードで上記ファイルを開く
-        json.dump(str, f, indent = '\t')        # str を書き込む
+        json.dump(json_str, f, indent='\t')        # str を書き込む
 
-        min = setTime.strftime('%M')  # 予定日時の分
-        hou = setTime.strftime('%H')  # 予定日時の時
-        day = setTime.strftime('%d')  # 予定日時の日
-        mon = setTime.strftime('%m')  # 予定日時の月
-        cron_str = '{} {} {} {} *'  # cronに設定する文字列のひな型。
-        cron_cmd = cron_str.format(min,hou,day,mon)        # 予定日時と命令をセット。文字列完成。
-        command = 'python /home/switch.py'
-        tabfile = 'reserved.tab'  # 予定を書き込むファイル
+        rsv_mnt = setTime.strftime('%M')  # 予定日時の分
+        rsv_hou = setTime.strftime('%H')  # 予定日時の時
+        rsv_day = setTime.strftime('%d')  # 予定日時の日
+        rsv_mon = setTime.strftime('%m')  # 予定日時の月
+        cron_string = '{} {} {} {} *'  # cronに設定する文字列のひな型。
+        rsv_datatime = cron_string.format(rsv_mnt, rsv_hou, rsv_day, rsv_mon)        # 予定日時と命令をセット。文字列完成。
+        rsv_command = 'python /home/switch.py'
+        tab_file = 'reserved.tab'  # 予定を書き込むファイル
 
         cc = CrontabControl()
-        cc.write_job(command, cron_cmd, tabfile)
+        cc.write_job(rsv_command, rsv_datatime, tab_file)
         cc.read_jobs(tabfile)
         cc.monitor_start()
 
@@ -45,7 +46,7 @@ class Timer():
 
 # cronの設定の仕方：分 時 日 月 曜 command  ワイルドカードは「*」、andは「,」、○毎は「n/n」、範囲は「n-n」
 # 例）10分毎＝（分のところに）*/10       例２）8時2分から20時2分まで3時間毎＝（分は）2 （時は）8-20/3
-
+"""
 cronSettingStart = "crontab -u root -e"     # -e cronを設定する, -l 設定されてるcronを表示する, -r cron削除, -u ユーザを指定する
 cronActionSet = "* * * * * python /home/switch.py"  # *ばかりだと毎分実行。分時日月曜。index.pyから指定されたタイミングを入れる。
 
@@ -66,8 +67,8 @@ c = CrontabControl()                    # インスタンス作成
 c.write_job(command, schedule, file)    # ファイルに書き込む
 c.read_jobs(file)                       # ファイルを読み込む（タスクスケジュールを読み込む）
 c.monitor_start(file)                   # タスクスケジュールの監視を開始
-
-#===================================
+"""
+# ===================================
 class CrontabControl:
     def __init__(self):
         self.cron = CronTab()
@@ -88,11 +89,21 @@ class CrontabControl:
         # スケジュールを読み込む
         self.read_jobs(file)
         for result in self.cron.run_scheduler():
-    # スケジュールになるとこの中の処理が実行される
+            # スケジュールになるとこの中の処理が実行される
+
+            # ログの出力名を設定（1）
+            logger = logging.getLogger('LoggingTest')
+            # ログレベルの設定（2）
+            logger.setLevel(0)
+            # ログのコンソール出力の設定（3）  ※不要のためコメントアウト
+            # sh = logging.StreamHandler()
+            # logger.addHandler(sh)
+            # ログのファイル出力先を設定（4）
+            fh = logging.FileHandler('test.log')
+            logger.addHandler(fh)
 
 
-
-#===================================
+# ===================================
 # 現在日時の取得
 # dt_now = datetime.datetime.now()
 # 30分後とか指定時刻を下記の dt にセットする。なお年月日は必須。
