@@ -1,18 +1,20 @@
 from bottle import Bottle, run, route, abort, request
 import json
 import requests
-import switch
-import timer
-import status
+#import switch
+#import timer
+#import status
 
 
 app = Bottle()
 
+# 辞書型
 params = {
     'kadenId': 4,
-    'manipulateId': 2,
+    'manipulateId': 0,
     'timerDatetime': '2019-09-08T11:00'
 }
+
 
 
 
@@ -39,26 +41,40 @@ def index():
     kadenId = params['kadenId']
     manipulateId = params['manipulateId']
     timerDatetime = params['timerDatetime']
-    timerDatetime = params['timerDatetime']
 
 
     #ステータス管理処理
     if manipulateId == 0:
-        status = status.Status()
-        #resStatus = status.checkStatus(dto.gatKadenId())
+        print(manipulateId)
+        jsonparams(params, manipulateId)
+        # status = status.Status()
+        #resStatus = status.checkStatus (kadenID(json形))
         #target_url = ''
         #request.get(target_url, resStatus)
 
     #ONOFF処理
     elif manipulateId in [1,2]:
-        onOff = switch.Switch()           
-        onOff.Switching(params)
+        print(manipulateId)
+        jsonparams(params, manipulateId)
+        # onOff = switch.Switch()           
+        # onOff.Switching(params) #kadenID manipulateIdを渡す
 
     #タイマー処理
-    elif manipulateId in [3,4]:            
-        timer = timer.Timer()            
-        timer.timerSetting(params)
+    elif manipulateId in [3,4]:
+        print(timerDatetime)
+        # timer = timer.Timer()            
+        # timer.timerSetting(params) #kadenId manipulateId,timerDatetime
+    
+def jsonparams(params, manipulateId):
+    for jsonData in params.items():
+        if manipulateId == 0:
+            print(jsonData)
+            break
 
+
+
+
+    
 
 if __name__ == "__main__":
     #app.run(host='localhost', port=8080, debug=True, reloader=True)

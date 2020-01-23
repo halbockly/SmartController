@@ -1,5 +1,4 @@
 # coding=utf-8
-import bottle
 import json
 import requests
 from physical.remoteController import remoteController
@@ -12,19 +11,20 @@ import status
 
 # 「既にON/OFFになっている」可能性も考慮すること。
 
-class Switch():
+
+class Switch:
     # kadenIdとmanipulateIdで家電を操作するメソッド。戻り値としてお言葉がもらえる。=========================================
     """引数　：param { kadenId:x, manipulateId:y }"""
     """戻り値：msg（文字列、処理結果を表す返答メッセージ）"""
-    def Switching(self,param):              # リクエストのJSON（{ kadenId:x, manipulateId:y }）を引数とする
+    def Switching(self, param):              # リクエストのJSON（{ kadenId:x, manipulateId:y }）を引数とする
         orderJson = getRequestStatus(param) # リクエストのJSONをorderJsonに保持
         kadenId = orderJson["kadenId"]      # 操作したい家電のID
         orderStatus = orderJson["manipulateId"]   # どう操作したいか（1:ONにしたい、2:OFFにしたい）
 
-        bool = priorConfirmation(kadenId,orderStatus)         # status.pyへ現在の家電のステータス確認
-        if bool:                                                # 既に求める状態になっている場合
-            str = "ON" if orderStatus == 1 else "OFF"           # status=1なら「ON」、=2なら「OFF」の文字列をセット
-            msg = "既に" + str + "になっています"                 # 返答メッセージ
+        bool_status = priorConfirmation(kadenId, orderStatus)         # status.pyへ現在の家電のステータス確認
+        if bool_status:                                                # 既に求める状態になっている場合
+            on_off = "ON" if orderStatus == 1 else "OFF"           # status=1なら「ON」、=2なら「OFF」の文字列をセット
+            msg = "既に" + on_off + "になっています"                 # 返答メッセージ
             return msg
         else:
             result = kadenSwitching(kadenId)                  # remoteController.pyへ赤外線送信依頼
@@ -38,7 +38,7 @@ class Switch():
                 return msg
 
     # class内の処理用メソッド
-    def priorConfirmation(self,kadenId,orderStatus):
+    def priorConfirmation(self, kadenId, orderStatus):
         """事前確認。現在の家電の状態を見てremoteContrpller.pyに命令を送るか決める"""
         st = Status()
         nowStatus = st.checkStatus(kadenId) # ステータス確認依頼
@@ -49,20 +49,18 @@ class Switch():
         else:
             return true                     # 求める状態と現在の状態が異なる⇒戻り値true
 
-
     # kadenIdを引数にしてremoteController.pyに電源操作の命令を送るメソッド=================================================
     """引数　：kadenId"""
     """戻り値：result（true/false、赤外線送信の成否）"""
-    def kadenSwitching(self,kadenId):
+    def kadenSwitching(self, kadenId):
         rc = remoteController()
         result = rc.execute(kadenId)
         return result
 
-
     # index.py もしくは cron からのリクエスト（JSON形式を想定）を取得するメソッド===========================================
     """引数　：param { kadenId:x, manipulateId:y }"""
     """戻り値：loadjson（辞書型、引数のJSONデータをpythonで扱いやすいようにした状態）"""
-    def getRequestStatus(self,param):
+    def getRequestStatus(self, param):
         openjson = open(param, 'r')
         loadJson = json.load(openjson)
         return loadJson
