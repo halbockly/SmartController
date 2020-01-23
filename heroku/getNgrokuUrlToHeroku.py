@@ -1,25 +1,39 @@
+# -*- coding: utf-8 -*-
 
 from bottle import Bottle, run, route, abort, request
-
+# とりあえずのサンプルソース（動作確認済み
 import configparser
-import os
+import subprocess
+import time
+import requests
 
 app = Bottle()
 
-# heroku config.set 環境変数名="値" でherokuの環境変数を指定して、os.environで取れる。
-YOUR_CHANNEL_ACCESS_TOKEN = os.environ['YOUR_CHANNEL_ACCESS_TOKEN']
-YOUR_CHANNEL_SECRET = os.environ['YOUR_CHANNEL_SECRET']
 
 @app.route('/getNgrokuUrlToHeroku', method='POST')
 def GetNgrokuUrlToHeroku():
+    print("GetHerokuUrlToHeroku START")
 
-    body = request.body
-    text_body = body.read().decode('UTF-8')
-    print(text_body)
+    body = request.params.url
+    print("body:" + body)
 
     inifile = configparser.ConfigParser()
     inifile.read("./settings/ngrokToHeroku.ini")
-    inifile.set("ngrok", "url", text_body)
+    inifile.set("ngrok", "url", body)
+
+    kadenJsonStr = request.params.file
+    print("file:" + kadenJsonStr)
+
+    kadenJson = open("./settings/kaden.json", "w")
+    kadenJson.write(kadenJsonStr)
+
+    kadenJson.close()
+
+    print("GetHerokuUrlToHeroku END")
 
     return {'statusCode': 200, 'body': '{}'}
 
+
+if __name__ == "__main__":
+    port = 80
+    app.run(host='localhost', port=port)
