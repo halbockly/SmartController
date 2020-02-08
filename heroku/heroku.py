@@ -514,6 +514,36 @@ class LineReplyMessage:
             headers=headers
         )
 
+# ngroku Urlの受け取り（別ファイル化がうまくいかなかったので間借りさせてもらいました。
+@app.route('/getNgrokuUrlToHeroku', method='POST')
+def getNgrokuUrlToHeroku():
+    print("GetHerokuUrlToHeroku START")
+
+    body = request.params.url
+    print("body:" + body)
+
+    inifile = configparser.ConfigParser()
+
+    inifile.add_section("ngrok")
+    inifile.set("ngrok", "url", body)
+
+    with open('./tmp/ngrokToHeroku.ini', 'w') as file:
+        inifile.write(file)
+
+    inifile.close()
+
+    kadenJsonStr = request.params.file
+    print("file:" + kadenJsonStr)
+
+    kadenJson = open("./tmp/kaden.json", "w")
+    kadenJson.write(kadenJsonStr)
+
+    kadenJson.close()
+
+    print("GetHerokuUrlToHeroku END")
+
+    return {'statusCode': 200, 'body': '{}'}
+
 
 if __name__ == "__main__":
     port = int(os.getenv('PORT'))
