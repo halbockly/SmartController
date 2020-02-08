@@ -44,8 +44,10 @@ class remoteController():
         return signal
 
     # 赤外線信号の保存
-    def saveInfraRed(self, port):
+    def getInfraRed(self, port):
         result = ir.get(port)
+
+        return result
 
     # OperationIdの新規採番
     def getNewAsignOperationId(self):
