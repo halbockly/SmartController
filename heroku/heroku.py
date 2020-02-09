@@ -544,6 +544,17 @@ def getNgrokuUrlToHeroku():
 
     return {'statusCode': 200, 'body': '{}'}
 
+@app.route('/checkIniFile', method='GET')
+def checkIniFile():
+    print("GetHerokuUrlToHeroku START")
+
+    body = request.params.url
+    print("body:" + body)
+
+    file = open('./tmp/kaden.json', 'r')
+    print(file)
+
+    return file
 
 if __name__ == "__main__":
     port = int(os.getenv('PORT'))

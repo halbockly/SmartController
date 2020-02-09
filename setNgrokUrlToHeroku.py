@@ -19,7 +19,7 @@ __STARTED_TUNNEL__ = "started tunnel"
 # 下記の値がURL
 __ADDR__ = "url="
 # 取り出したURLの送信先
-__REQUEST_URL__ = "http://https://smartcontrollerheroku.herokuapp.com//getNgrokuUrlToHeroku"
+__REQUEST_URL__ = "https://smartcontrollerheroku.herokuapp.com/getNgrokuUrlToHeroku"
 # kaden.json PATH
 __KADEN_JSON_PATH__ = "kaden.json"
 
