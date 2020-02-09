@@ -30,7 +30,7 @@ class Status:
                 loadRequestJson[kadenId]['status'] = 0           # ステータスを書き換え
 
             new_json_file = open('kaden.json', 'w')             # kaden.jsonを書き込みたいファイルとして開く
-            jdon.dump(loadRequestJson, new_json_file, indent='\t')   # kaden.jsonを上書き
+            json.dump(loadRequestJson, new_json_file, indent='\t')   # kaden.jsonを上書き
             new_json_file.close()                               # 上書きしたファイルを閉じる
 
         except (FileExistsError, FileNotFoundError):
