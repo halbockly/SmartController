@@ -41,7 +41,7 @@ class Status:
     # ▼class内の処理用メソッド▼
     # kaden.jsonそのものを取得するメソッド================================================================================
     """引数　：なし"""
-    """戻り値：loadRequestJson（ずばり、kaden.json）"""
+    """戻り値：loadRequestJson（読み込んだkaden.json）"""
     def getKadenStatus(self):
         openRequestJson = open('kaden.json', 'r')       # kaden.jsonを開く
         loadRequestJson = json.load(openRequestJson)    # kaden.jsonを読み込む
