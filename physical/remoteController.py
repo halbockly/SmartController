@@ -1,5 +1,5 @@
 from bottle import Bottle, run, route, abort, request
-import adrsirlib as ir
+import physical.adrsirlib.adrsirlib as ir
 
 import json
 
@@ -15,29 +15,32 @@ class remoteController():
 
         try:
             # とりあえずこれが動けば成功
-            #print('家電ID:' + kadenId)
+            # print('家電ID:' + kadenId)
 
-            infraRedSign = getInfraRedSign(kaden_id)
-
+            infraRedSign = self.getInfraRedSign(kadenId)
+            print(infraRedSign)
             # 実機じゃないと動かないのでコメントアウト。そのうちブランチ切る
             # 赤外線.jsonの読み出し
             ir.send(infraRedSign)
 
         except:
             result = False
+            print("おちたよ")
 
         return result
-
 
     # 赤外線信号 の取得
     def getInfraRedSign(self, kadenId):
 
         # 読み取りモードで開く
         f = open("kaden.json", 'r')
+
         # Jsonの取得
-        kadenJson = json.loads(f)
+        kadenJson = json.load(f)
+
         # 家電情報の取得
         kaden = kadenJson[kadenId]
+
         # 赤外線の取得
         signal = kaden["signal"]
 
@@ -61,4 +64,5 @@ class remoteController():
         newAsignId = int(maxId) + 1
 
         return newAsignId
+
 
