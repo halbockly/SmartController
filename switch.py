@@ -1,7 +1,7 @@
 # coding=utf-8
 import json
 import requests
-# from physical.remoteController import remoteController
+from physical.remoteController import remoteController
 import status
 
 # 電源の入り切りをする子
