@@ -15,25 +15,31 @@ rc = remoteController()
 infraRedSign = rc.getInfraRed(0)
 print(infraRedSign)
 
-kaden = open('kaden.json', 'r')
-# Jsonの取得
-kadenJson = json.load(kaden)
+try:
+    # Jsonの取得
+    kaden = open('kaden.json', 'r')
+    kadenJson = json.load(kaden)
 
-#家電IDは最新値＋１を振る
-lastKey = ""
-for key in kadenJson:
-    lastKey = key
-newKey = int(lastKey) + 1
-print("newKey:" + str(newKey))
-newStringKey = str(newKey)
+    # 家電IDは最新値＋１を振る
+    lastKey = ""
+    for key in kadenJson:
+        lastKey = key
+    newKey = int(lastKey) + 1
 
-kadenJson[newStringKey] = {"name":"test","signal":infraRedSign,"status":"0"}
+    print("newKey:" + str(newKey))
+    newStringKey = str(newKey)
+except:
+    newStringKey = "1"
+    kadenJson = {}
+
+kadenJson[newStringKey] = {"name": "test", "signal": infraRedSign, "status": "0"}
 
 # 家電JSONに追加
 kadenJson.update(kadenJson)
-kaden.close();
+kaden.close()
 
 kadenW = open('kaden.json', 'w')
 
 json.dump(kadenJson, kadenW, indent='\t')  # kaden.jsonを上書き
 kadenW.close()  # 上書きしたファイルを閉じる
+
