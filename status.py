@@ -10,7 +10,7 @@ class Status:
     """引数　：id（kadenId）"""
     """戻り値：resStatus（0 or 1、kaden.jsonで確認した対象のステータス）"""
     def checkStatus(self, kadenId):
-        loadRequestJson = getKadenStatus()              # kaden.JSONを取得
+        loadRequestJson = self.getKadenStatus()              # kaden.JSONを取得
         resStatus = loadRequestJson[kadenId]['status']       # リクエストのidの['status']を取得する
         return resStatus                                # レスポンス( 0 or 1 )を送る
 
@@ -20,7 +20,7 @@ class Status:
     """戻り値：result（true/false、kaden.jsonの対象のステータスの書き換え成否）"""
     def changeStatusJson(self, kadenId):
         result = true                                   # 書き換え完了フラグ
-        loadRequestJson = getKadenStatus()              # kaden.JSONを取得
+        loadRequestJson = self.getKadenStatus()              # kaden.JSONを取得
         status = loadRequestJson[kadenId]['status']          # リクエストのkadenIdのステータスを取得
 
         try:
@@ -30,7 +30,7 @@ class Status:
                 loadRequestJson[kadenId]['status'] = 0           # ステータスを書き換え
 
             new_json_file = open('kaden.json', 'w')             # kaden.jsonを書き込みたいファイルとして開く
-            jdon.dump(loadRequestJson, new_json_file, indent='\t')   # kaden.jsonを上書き
+            json.dump(loadRequestJson, new_json_file, indent='\t')   # kaden.jsonを上書き
             new_json_file.close()                               # 上書きしたファイルを閉じる
 
         except (FileExistsError, FileNotFoundError):
