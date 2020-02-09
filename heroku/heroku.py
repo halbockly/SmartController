@@ -18,7 +18,7 @@ reply_url = 'https://api.line.me/v2/bot/message/reply'
 push_url = 'https://api.line.me/v2/bot/message/push'
 
 ini = configparser.ConfigParser()
-ini.read('tmp/ngrokToHeroku.ini', 'UTF-8')
+ini.read('./tmp/ngrokToHeroku.ini', 'UTF-8')
 
 
 app = Bottle()
@@ -92,6 +92,8 @@ def reply_to_line(body):
                     # それぞれの家電の状態確認してjsonに反映するために、
                     # ラズパイのindex.pyにリクエスト送って、jsonを更新
 
+                    ini = configparser.ConfigParser()
+                    ini.read('./tmp/ngrokToHeroku.ini', 'UTF-8')
                     # ngrokで指定されるURL
                     target_url = ini['ngrok']['url']
                     method = 'GET'
@@ -157,6 +159,8 @@ def reply_to_line(body):
                 # manipulateId → 1=ON, 2=OFF
                 kadenId = manipulated_on_kadenId
 
+                ini = configparser.ConfigParser()
+                ini.read('./tmp/ngrokToHeroku.ini', 'UTF-8')
                 # index.pyが受け取るURL
                 target_url = ini['ngrok']['url']
                 headers = {
@@ -184,6 +188,8 @@ def reply_to_line(body):
                 # manipulateId → 1=ON, 2=OFF
                 kadenId = manipulated_off_kadenId
 
+                ini = configparser.ConfigParser()
+                ini.read('./tmp/ngrokToHeroku.ini', 'UTF-8')
                 # index.pyが受け取るURL
                 target_url = ini['ngrok']['url']
                 headers = {'Content-Type': 'application/json'}
@@ -219,6 +225,9 @@ def reply_to_line(body):
                 kadenId = selected_timer_kadenId
                 timer_datetime = postback_params
 
+                ini = configparser.ConfigParser()
+                ini.read('./tmp/ngrokToHeroku.ini', 'UTF-8')
+
                 target_url = ini['ngrok']['url']
                 headers = {'Content-Type': 'application/json'}
 
@@ -243,6 +252,8 @@ def reply_to_line(body):
                 kadenId = selected_timer_kadenId
                 timer_datetime = postback_params
 
+                ini = configparser.ConfigParser()
+                ini.read('./tmp/ngrokToHeroku.ini', 'UTF-8')
                 target_url = ini['ngrok']['url']
                 headers = {'Content-Type': 'application/json'}
 
@@ -635,8 +646,6 @@ def getNgrokuUrlToHeroku():
     with open('./tmp/ngrokToHeroku.ini', 'w') as file:
         inifile.write(file)
 
-    inifile.close()
-
     kadenJsonStr = request.params.file
     print("file:" + kadenJsonStr)
 
@@ -658,8 +667,13 @@ def checkIniFile():
 
     file = open('./tmp/kaden.json', 'r')
     print(file)
+    file
 
-    return file
+    fileini = open('./tmp/ngrokToHeroku.ini', 'r')
+    print(fileini)
+
+
+    return fileini
 
 if __name__ == "__main__":
     port = int(os.getenv('PORT'))
