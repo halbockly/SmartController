@@ -14,7 +14,7 @@ class Timer:
     def timerSetting(self, param):               # このメソッドを読んでもらえればタイマー予約します！多分
         sw = Switch()
         orderJson = sw.getRequestStatus(param)
-        result = makeOrder(orderJson)
+        result = self.makeOrder(orderJson)
         msg = "予約しました" if result == true else "予約失敗"
         return msg
 

@@ -1,7 +1,7 @@
 # coding=utf-8
 import json
 import requests
-from physical.remoteController import remoteController
+# from physical.remoteController import remoteController
 import status
 
 # 電源の入り切りをする子
@@ -17,18 +17,18 @@ class Switch:
     """引数　：param { kadenId:x, manipulateId:y }"""
     """戻り値：msg（文字列、処理結果を表す返答メッセージ）"""
     def Switching(self, param):                     # リクエストのJSON（{ kadenId:x, manipulateId:y }）を引数とする
-        orderJson = getRequestStatus(param)         # リクエストのJSONをorderJsonに保持
+        orderJson = self.getRequestStatus(param)         # リクエストのJSONをorderJsonに保持
         kadenId = orderJson["kadenId"]              # 操作したい家電のID
         orderStatus = orderJson["manipulateId"]     # どう操作したいか（1:ONにしたい、2:OFFにしたい）
                                                     # ※（3:ON予約、4:OFF予約）はindex.py⇒timer.pyの直通で処理
 
-        bool_status = priorConfirmation(kadenId, orderStatus)   # status.pyへ現在の家電のステータス確認
+        bool_status = self.priorConfirmation(kadenId, orderStatus)   # status.pyへ現在の家電のステータス確認
         if bool_status:                                         # 既に求める状態になっている場合
             on_off = "ON" if orderStatus == 1 else "OFF"        # status=1なら「ON」、=2なら「OFF」の文字列をセット
             msg = "既に" + on_off + "になっています"             # 返答メッセージ
             return msg
         else:
-            result = kadenSwitching(kadenId)                    # remoteController.pyへ赤外線送信依頼
+            result = self.kadenSwitching(kadenId)                    # remoteController.pyへ赤外線送信依頼
             if result:                                          # 赤外線送信の成否
                 st = Status()
                 rewrite = st.changeStatusJson(kadenId)          # 成功：status.pyへのステータス書き換え依頼
