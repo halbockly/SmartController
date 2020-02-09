@@ -1,9 +1,10 @@
 from bottle import Bottle, run, route, abort, request
+from crontab import CronTab
 import json
 import requests
-#import switch
-#import timer
-#import status
+import switch
+import timer
+import status
 
 
 app = Bottle()
@@ -36,7 +37,7 @@ def ErrorCheckDeco(func):
 #Main処理
 def index():                                        
     # heroku側からparamsの受け取り
-    # params = request.json.
+    params = request.json
 
     kadenId = params['kadenId']
     manipulateId = params['manipulateId']
@@ -45,25 +46,51 @@ def index():
 
     #ステータス管理処理
     if manipulateId == 0:
-        print(manipulateId)
+        params = {
+                    'kadenId': 1
+                }
         jsonparams(params, manipulateId)
-        # status = status.Status()
-        #resStatus = status.checkStatus (kadenID(json形))
-        #target_url = ''
-        #request.get(target_url, resStatus)
+        status = status.Status()
+        resStatus = status.checkStatus (params)
+        target_url = ''
+        request.get(target_url, resStatus)
 
-    #ONOFF処理
-    elif manipulateId in [1,2]:
-        print(manipulateId)
+    #ON処理
+    elif manipulateId == 1:
+        params = {
+                    'kadenId': 1,
+                    'manipulateId': 1
+                }
         jsonparams(params, manipulateId)
-        # onOff = switch.Switch()           
-        # onOff.Switching(params) #kadenID manipulateIdを渡す
+        onOff = switch.Switch()           
+        onOff.Switching(params) #kadenID manipulateIdを渡す
+
+    #OFF処理
+    elif manipulateId == 2:
+        params = {
+                    'kadenId': 1,
+                    'manipulateId': 2
+                }
+        jsonparams(params, manipulateId)
+        onOff = switch.Switch()           
+        onOff.Switching(params) #kadenID manipulateIdを渡す
 
     #タイマー処理
-    elif manipulateId in [3,4]:
-        print(timerDatetime)
-        # timer = timer.Timer()            
-        # timer.timerSetting(params) #kadenId manipulateId,timerDatetime
+    elif manipulateId == 3:
+        params = {
+                    'kadenId': 1,
+                    'manipulateId': 3,
+                    'timerDatetime': '2019-09-08T11:00'
+                }           
+        timer.timerSetting(params) #kadenId manipulateId,timerDatetime
+
+    elif manipulateId == 4:
+        params = {
+                    'kadenId': 1,
+                    'manipulateId': 4,
+                    'timerDatetime': '2019-09-08T11:00'
+                }           
+    timer.timerSetting(params) #kadenId manipulateId,timerDatetime
     
 def jsonparams(params, manipulateId):
     for jsonData in params.items():
@@ -77,5 +104,4 @@ def jsonparams(params, manipulateId):
     
 
 if __name__ == "__main__":
-    #app.run(host='localhost', port=8080, debug=True, reloader=True)
-    index()
+    app.run(host='localhost', port=8080, debug=True, reloader=True)
