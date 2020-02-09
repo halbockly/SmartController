@@ -18,7 +18,7 @@ reply_url = 'https://api.line.me/v2/bot/message/reply'
 push_url = 'https://api.line.me/v2/bot/message/push'
 
 ini = configparser.ConfigParser()
-ini.read('tmp/ngrokToHeroku.ini', 'UTF-8')
+ini.read('./tmp/ngrokToHeroku.ini', 'UTF-8')
 
 
 app = Bottle()
@@ -67,7 +67,7 @@ def reply_to_line(body):
 
     # 家電名、状態、数などを取得
     # kaden.jsonは同ディレクトリ？
-    kaden_json = open('kaden.json')
+    kaden_json = open('./tmp/kaden.json')
     kaden_info = json.load(kaden_json)
 
 
@@ -87,43 +87,38 @@ def reply_to_line(body):
 
                 user_input = message['text']
 
+                if user_input == 'メニュー':
 
-                # メッセージが規定のものか調べる
-                # msg.jsonに規定メッセージ書く？
-                with open('msg.json', 'r') as f:
-                    df = json.load(f)
+                    # それぞれの家電の状態確認してjsonに反映するために、
+                    # ラズパイのindex.pyにリクエスト送って、jsonを更新
 
-                    for msg in df.values():
-                        if user_input == msg:
+                    ini = configparser.ConfigParser()
+                    ini.read('./tmp/ngrokToHeroku.ini', 'UTF-8')
+                    # ngrokで指定されるURL
+                    target_url = ini['ngrok']['url']
+                    method = 'GET'
+                    param = {
+                        'manipulateId': '0'
+                    }
+                    headers = {'Content-Type': 'application/json'}
 
-                            # それぞれの家電の状態確認してjsonに反映するために、
-                            # ラズパイのindex.pyにリクエスト送って、jsonを更新
+                    # 状態確認して状態のjson更新する。manipulateId=0→ステータス確認
+                    requests.get(
+                        target_url,
+                        data=json.dumps(param),
+                        headers=headers
+                    )
 
-                            # ngrokで指定されるURL
-                            target_url = ini['ngrok']['url']
-                            headers = {'Content-Type': 'application/json'}
+                    responses.append(
+                        LineReplyMessage.mainmenu_response())
 
-                            # 状態確認して状態のjson更新する。manipulateId=0→ステータス確認
-                            requests.get(
-                                target_url,
-                                params = {
-                                    'manipulateId': '0'
-                                },
-                                headers = headers
-                            )
-
-                            responses.append(
-                                LineReplyMessage.mainmenu_response())
-
-                            break
-
-                    else:
-                        responses.append(
-                            LineReplyMessage.make_text_response('メニュー見たいならメニューって入れろ'))
+                else:
+                    responses.append(
+                        LineReplyMessage.make_text_response('メニュー見たいならメニューって入れてね'))
 
             else:
                 responses.append(
-                    LineReplyMessage.make_text_response('テキストで入力しろ'))
+                    LineReplyMessage.make_text_response('テキストで入力してよ、ばか'))
 
 
 
@@ -134,7 +129,7 @@ def reply_to_line(body):
 
             # 家電を選ぶメニューを表示。これがメインメニュー。
             if postback_data == 'select=manipulate':
-                responses.append(LineReplyMessage.kaden_response(kaden_info))
+                responses.append(LineReplyMessage.manipulate_kaden_menu(kaden_info))
 
 
             # 操作する家電を選ぶメニュー。
@@ -164,6 +159,8 @@ def reply_to_line(body):
                 # manipulateId → 1=ON, 2=OFF
                 kadenId = manipulated_on_kadenId
 
+                ini = configparser.ConfigParser()
+                ini.read('./tmp/ngrokToHeroku.ini', 'UTF-8')
                 # index.pyが受け取るURL
                 target_url = ini['ngrok']['url']
                 headers = {
@@ -191,6 +188,8 @@ def reply_to_line(body):
                 # manipulateId → 1=ON, 2=OFF
                 kadenId = manipulated_off_kadenId
 
+                ini = configparser.ConfigParser()
+                ini.read('./tmp/ngrokToHeroku.ini', 'UTF-8')
                 # index.pyが受け取るURL
                 target_url = ini['ngrok']['url']
                 headers = {'Content-Type': 'application/json'}
@@ -226,6 +225,9 @@ def reply_to_line(body):
                 kadenId = selected_timer_kadenId
                 timer_datetime = postback_params
 
+                ini = configparser.ConfigParser()
+                ini.read('./tmp/ngrokToHeroku.ini', 'UTF-8')
+
                 target_url = ini['ngrok']['url']
                 headers = {'Content-Type': 'application/json'}
 
@@ -250,6 +252,8 @@ def reply_to_line(body):
                 kadenId = selected_timer_kadenId
                 timer_datetime = postback_params
 
+                ini = configparser.ConfigParser()
+                ini.read('./tmp/ngrokToHeroku.ini', 'UTF-8')
                 target_url = ini['ngrok']['url']
                 headers = {'Content-Type': 'application/json'}
 
@@ -307,50 +311,105 @@ class LineReplyMessage:
             "altText": "mainmenu",
             "contents": {
                 "type": "bubble",
-                "body": {
-                    "type": "box",
-                    "layout": "vertical",
-                    "spacing": "md",
-                    "contents": [
-                        {
-                            "type": "button",
-                            "style": "primary",
-                            "action": {
-                                "type": "postback",
-                                "label": "家電操作",
-                                "data": "select=manipulate"
-                            }
-                        },
-                        {
-                            "type": "button",
-                            "style": "secondary",
-                            "action": {
-                                "type": "postback",
-                                "label": "状態確認",
-                                "data": "select=status"
-                            }
-                        }
-                    ]
+                "hero": {
+                    "type": "image",
+                    "url": "https://www.kajitaku.com/column/wp-content/uploads/2017/12/shutterstock_315007316.jpg",
+                    "size": "full",
+                    "aspectRatio": "20:13",
+                    "aspectMode": "cover"
+                },
+            "body": {
+            "type": "box",
+            "layout": "vertical",
+            "contents": [
+                {
+                    "type": "text",
+                    "text": "Home Appliances Controller",
+                    "weight": "bold",
+                    "size": "lg"
                 }
+            ]
+            },
+            "footer": {
+                "type": "box",
+                "layout": "vertical",
+                "spacing": "md",
+                "contents": [
+                    {
+                        "type": "button",
+                        "style": "primary",
+                        "height": "sm",
+                        "color": "#ff7f50",
+                        "action": {
+                            "type": "postback",
+                            "label": "Manipulate",
+                            "data": "select=manipulate"
+                        }
+                    },
+                    {
+                        "type": "button",
+                        "style": "secondary",
+                        "height": "sm",
+                        "color": "#e6e6fa",
+                        "action": {
+                            "type": "postback",
+                            "label": "Show Status",
+                            "data": "select=status"
+                        }
+                    }
+                ]
             }
         }
+    }
 
-    # 操作家電選択画面
     @staticmethod
-    def kaden_response(kaden_info):
+    def manipulate_kaden_menu(kaden_info):
 
         kaden_manipulate_list = []
+
         for i in range(1, len(kaden_info)+1):
+
+            if kaden_info[str(i)]['name'] == 'エアコン':
+                kaden_image = "https://www.kajitaku.com/column/wp-content/uploads/2017/12/shutterstock_315007316.jpg"
+            elif kaden_info[str(i)]['name'] == '電気':
+                kaden_image = "https://iwiz-chie.c.yimg.jp/im_sigg9r7qhe_vkybPyuDV8E13Ag---x320-y320-exp5m-n1/d/iwiz-chie/que-10143212585"
+            else:
+                kaden_image = "https://shopping.dmkt-sp.jp/excludes/ds/img/genre/ctg-head-sp03.jpg"
+
             kaden_manipulate_list.append(
                 {
                     "type": "bubble",
+                    "hero": {
+                        "type": "image",
+                        "url": kaden_image,
+                        "size": "full",
+                        "aspectMode": "cover",
+                        "aspectRatio": "320:213"
+                    },
                     "body": {
                         "type": "box",
-                        "layout": "horizontal",
+                        "layout": "vertical",
                         "contents": [
                             {
-                                "type": "text",
-                                "text": kaden_info[str(i)]['name']
+                                "type": "box",
+                                "layout": "baseline",
+                                "contents": [
+                                    {
+                                        "type": "text",
+                                        "text": "name:",
+                                        "size": "xs",
+                                        "margin": "md",
+                                        "color": "#8c8c8c",
+                                        "flex": 0
+                                    },
+                                    {
+                                    "type": "text",
+                                    "text": kaden_info[str(i)]['name'],
+                                    "size": "xs",
+                                    "margin": "md",
+                                    "flex": 0
+                                    }
+                                ]
                             }
                         ]
                     },
@@ -361,9 +420,10 @@ class LineReplyMessage:
                             {
                                 "type": "button",
                                 "style": "primary",
+                                "color": "#00bfff",
                                 "action": {
                                     "type": "postback",
-                                    "label": "操作する",
+                                    "label": "Manipulate",
                                     "data": "select=manipulate&kadenId=" + str(i)
                                 }
                             }
@@ -381,8 +441,6 @@ class LineReplyMessage:
             }
         }
 
-
-    # 選択した家電の操作画面
     @staticmethod
     def manipulate_response(selected_kadenId):
         return {
@@ -398,18 +456,20 @@ class LineReplyMessage:
                         {
                             "type": "button",
                             "style": "primary",
+                            "color": "#00bfff",
                             "action": {
                                 "type": "postback",
-                                "label": "電源ON",
+                                "label": "ON",
                                 "data": "action=on&kadenId=" + selected_kadenId
                             }
                         },
                         {
                             "type": "button",
                             "style": "primary",
+                            "color": "#c0c0c0",
                             "action": {
                                 "type": "postback",
-                                "label": "電源OFF",
+                                "label": "OFF",
                                 "data": "action=off&kadenId=" + selected_kadenId
                             }
                         },
@@ -418,7 +478,7 @@ class LineReplyMessage:
                             "style": "secondary",
                             "action": {
                                 "type": "postback",
-                                "label": "タイマー",
+                                "label": "Timer",
                                 "data": "select=timer&kadenId=" + selected_kadenId
                             }
                         }
@@ -434,42 +494,96 @@ class LineReplyMessage:
         kaden_status_list = []
         for i in range(1, len(kaden_info)+1):
 
-            if kaden_info[str(i)]['status'] == '1':
-                kaden_status = '電源ON'
+            if kaden_info[str(i)]['name'] == 'エアコン':
+                kaden_image = "https://www.kajitaku.com/column/wp-content/uploads/2017/12/shutterstock_315007316.jpg"
+            elif kaden_info[str(i)]['name'] == '電気':
+                kaden_image = "https://iwiz-chie.c.yimg.jp/im_sigg9r7qhe_vkybPyuDV8E13Ag---x320-y320-exp5m-n1/d/iwiz-chie/que-10143212585"
             else:
-                kaden_status = '電源OFF'
+                kaden_image = "https://shopping.dmkt-sp.jp/excludes/ds/img/genre/ctg-head-sp03.jpg"
+
+            if kaden_info[str(i)]['status'] == '1':
+                kaden_status = 'ON'
+            else:
+                kaden_status = 'OFF'
+
 
             kaden_status_list.append(
                 {
                     "type": "bubble",
-                    "header": {
-                        "type": "box",
-                        "layout": "horizontal",
-                        "contents": [
-                            {
-                                "type": "text",
-                                "text": "家電名 : " + kaden_info[str(i)]['name']
-                            }
-                        ]
+                    "hero": {
+                        "type": "image",
+                        "url": kaden_image,
+                        "size": "full",
+                        "aspectMode": "cover",
+                        "aspectRatio": "320:213"
                     },
                     "body": {
                         "type": "box",
-                        "layout": "horizontal",
+                        "layout": "vertical",
                         "contents": [
                             {
-                                "type": "text",
-                                "text": "状態 : " + kaden_status
-                            }
-                        ]
-                    },
-                    "footer": {
-                        "type": "box",
-                        "layout": "horizontal",
-                        "contents": [
+                                "type": "box",
+                                "layout": "baseline",
+                                "contents": [
+                                    {
+                                        "type": "text",
+                                        "text": "name:",
+                                        "size": "xs",
+                                        "margin": "md",
+                                        "color": "#8c8c8c",
+                                        "flex": 0
+                                    },
+                                    {
+                                    "type": "text",
+                                    "text": kaden_info[str(i)]['name'],
+                                    "size": "xs",
+                                    "margin": "md",
+                                    "flex": 0
+                                    }
+                                ]
+                            },
                             {
-                                "type": "text",
-                                "text": "信号 : " + kaden_info[str(i)]['signal']
-                            }
+                                "type": "box",
+                                "layout": "baseline",
+                                "contents": [
+                                    {
+                                        "type": "text",
+                                        "text": "status:",
+                                        "size": "xs",
+                                        "margin": "md",
+                                        "color": "#8c8c8c",
+                                        "flex": 0
+                                    },
+                                    {
+                                    "type": "text",
+                                    "text": kaden_status,
+                                    "size": "xs",
+                                    "margin": "md",
+                                    "flex": 0
+                                    }
+                                ]
+                            },
+                            {
+                                "type": "box",
+                                "layout": "baseline",
+                                "contents": [
+                                    {
+                                        "type": "text",
+                                        "text": "signal:",
+                                        "size": "xs",
+                                        "margin": "md",
+                                        "color": "#8c8c8c",
+                                        "flex": 0
+                                    },
+                                    {
+                                    "type": "text",
+                                    "text": kaden_info[str(i)]['signal'],
+                                    "size": "xs",
+                                    "margin": "md",
+                                    "flex": 0
+                                    }
+                                ]
+                            },
                         ]
                     }
                 }
@@ -493,6 +607,7 @@ class LineReplyMessage:
             'text': text
         }
 
+
     # リプライ定義
     @staticmethod
     def send_reply(replyToken, messages):
@@ -514,6 +629,7 @@ class LineReplyMessage:
             headers=headers
         )
 
+
 # ngroku Urlの受け取り（別ファイル化がうまくいかなかったので間借りさせてもらいました。
 @app.route('/getNgrokuUrlToHeroku', method='POST')
 def getNgrokuUrlToHeroku():
@@ -530,8 +646,6 @@ def getNgrokuUrlToHeroku():
     with open('./tmp/ngrokToHeroku.ini', 'w') as file:
         inifile.write(file)
 
-    inifile.close()
-
     kadenJsonStr = request.params.file
     print("file:" + kadenJsonStr)
 
@@ -544,6 +658,22 @@ def getNgrokuUrlToHeroku():
 
     return {'statusCode': 200, 'body': '{}'}
 
+@app.route('/checkIniFile', method='GET')
+def checkIniFile():
+    print("GetHerokuUrlToHeroku START")
+
+    body = request.params.url
+    print("body:" + body)
+
+    file = open('./tmp/kaden.json', 'r')
+    print(file)
+    file
+
+    fileini = open('./tmp/ngrokToHeroku.ini', 'r')
+    print(fileini)
+
+
+    return fileini
 
 if __name__ == "__main__":
     port = int(os.getenv('PORT'))
