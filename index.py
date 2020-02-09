@@ -2,9 +2,9 @@ from bottle import Bottle, run, route, abort, request
 from crontab import CronTab
 import json
 import requests
-import switch
-import timer
-import status
+from switch import Switch
+from timer import Timer
+from status import Status
 
 
 app = Bottle()
@@ -12,7 +12,7 @@ app = Bottle()
 # 辞書型
 params = {
     'kadenId': 4,
-    'manipulateId': 0,
+    'manipulateId': 1,
     'timerDatetime': '2019-09-08T11:00'
 }
 
@@ -35,9 +35,18 @@ def ErrorCheckDeco(func):
 @app.route('/test', method='POST')
 @ErrorCheckDeco
 #Main処理
-def index():                                        
+def index():
+    status_class = Status()
+    switch_class = Switch()
+    timer_class = Timer()
+
     # heroku側からparamsの受け取り
-    params = request.json
+    # params = request.json
+    params = {
+    'kadenId': 4,
+    'manipulateId': 1,
+    'timerDatetime': '2019-09-08T11:00'
+}
 
     kadenId = params['kadenId']
     manipulateId = params['manipulateId']
@@ -46,12 +55,8 @@ def index():
 
     #ステータス管理処理
     if manipulateId == 0:
-        params = {
-                    'kadenId': 1
-                }
         jsonparams(params, manipulateId)
-        status = status.Status()
-        resStatus = status.checkStatus (params)
+        resStatus = status_class.checkStatus (kadenId)
         target_url = ''
         request.get(target_url, resStatus)
 
@@ -62,8 +67,7 @@ def index():
                     'manipulateId': 1
                 }
         jsonparams(params, manipulateId)
-        onOff = switch.Switch()           
-        onOff.Switching(params) #kadenID manipulateIdを渡す
+        switch_class.Switching(params) #kadenID manipulateIdを渡す
 
     #OFF処理
     elif manipulateId == 2:
@@ -71,18 +75,18 @@ def index():
                     'kadenId': 1,
                     'manipulateId': 2
                 }
-        jsonparams(params, manipulateId)
-        onOff = switch.Switch()           
-        onOff.Switching(params) #kadenID manipulateIdを渡す
+        jsonparams(params, manipulateId)          
+        switch_class.Switching(params) #kadenID manipulateIdを渡す
 
     #タイマー処理
     elif manipulateId == 3:
+        timer_class = Timer()
         params = {
                     'kadenId': 1,
                     'manipulateId': 3,
                     'timerDatetime': '2019-09-08T11:00'
                 }           
-        timer.timerSetting(params) #kadenId manipulateId,timerDatetime
+        timer_class.timerSetting(params) #kadenId manipulateId,timerDatetime
 
     elif manipulateId == 4:
         params = {
@@ -90,7 +94,7 @@ def index():
                     'manipulateId': 4,
                     'timerDatetime': '2019-09-08T11:00'
                 }           
-    timer.timerSetting(params) #kadenId manipulateId,timerDatetime
+    timer_class.timerSetting(params) #kadenId manipulateId,timerDatetime
     
 def jsonparams(params, manipulateId):
     for jsonData in params.items():
