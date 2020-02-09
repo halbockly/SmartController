@@ -19,7 +19,7 @@ class Status:
     """引数　：id（kadenId）"""
     """戻り値：result（true/false、kaden.jsonの対象のステータスの書き換え成否）"""
     def changeStatusJson(self, kadenId):
-        result = true                                   # 書き換え完了フラグ
+        result = True                                   # 書き換え完了フラグ
         loadRequestJson = self.getKadenStatus()              # kaden.JSONを取得
         status = loadRequestJson[kadenId]['status']          # リクエストのkadenIdのステータスを取得
 

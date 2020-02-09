@@ -1,6 +1,6 @@
 # coding=utf-8
 from crontab import CronTab
-import switch
+from switch import Switch
 import logging
 
 # Linuxのタスクマネージャー「cron」にタイマー予約をセットする
@@ -28,7 +28,7 @@ class Timer:
         order = 1 if order == 3 else 2           # 1:ON 2:OFF    ※order=3なら1を、そうでないなら2をセットする
         setTime = orderJson['timer_datetime']    # cronで命令を飛ばす日時　例）'2019-09-08T11:00'
 
-        cronWriteResult = true
+        cronWriteResult = True
         try:
             json_str = {
                 "kadenId": kadenId,
@@ -53,7 +53,7 @@ class Timer:
             cc.monitor_start()                                  # crontabを監視する
 
         except:
-            cronWriteResult = false
+            cronWriteResult = False
 
         return cronWriteResult
 
