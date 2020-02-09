@@ -5,7 +5,6 @@ import logging
 
 # Linuxのタスクマネージャー「cron」にタイマー予約をセットする
 # cronがもし落ちてたらetcで再起動させて対応する必要がある
-# やりとりするのは、input:index.py　、　output:cron　、　i/o:status.py
 
 class Timer:
     # ▼index.pyとのやり取り▼
