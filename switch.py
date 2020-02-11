@@ -2,7 +2,7 @@
 import json
 import requests
 from physical.remoteController import remoteController
-import status
+from status import Status
 
 # 電源の入り切りをする子
 # と言っても、受け取ったリクエストをremoteController.pyに横流しするだけ
@@ -44,11 +44,11 @@ class Switch:
         st = Status()
         nowStatus = st.checkStatus(kadenId)         # ステータス確認依頼
         if orderStatus == 1 and nowStatus == 1:     # 求める状態と現在の状態を比較
-            return false                            # 既に求める状態になっている⇒戻り値false
+            return False                            # 既に求める状態になっている⇒戻り値false
         elif orderStatus == 2 and nowStatus == 0:
-            return false                            # 既に求める状態になっている⇒戻り値false
+            return False                            # 既に求める状態になっている⇒戻り値false
         else:
-            return true                             # 求める状態と現在の状態が異なる⇒戻り値true
+            return True                             # 求める状態と現在の状態が異なる⇒戻り値true
 
     # kadenIdを引数にしてremoteController.pyに電源操作の命令を送るメソッド=================================================
     """引数　：kadenId"""
