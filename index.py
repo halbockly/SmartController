@@ -9,22 +9,16 @@ from status import Status
 
 app = Bottle()
 
-# 辞書型
-params = {
-    'kadenId': 4,
-    'manipulateId': 1,
-    'timerDatetime': '2019-09-08T11:00'
-}
-
-
-
-
 #manipulateIdが0～4以外かのチェック。
-def ErrorCheckDeco(func): 
-    def check():
-        manipulateId = params['manipulateId']
+def ErrorCheckDeco(func):
+    def check(): 
+        params = request.json
+        manipulateId = int(params['manipulateId'])
         if manipulateId < 0 or manipulateId > 4:
             print("存在しない命令です。")
+            msg = "存在しない命令です。"
+            target_url = ''
+            request.get(target_url, resStatus)
 
         else:
             func()
@@ -41,66 +35,36 @@ def index():
     timer_class = Timer()
 
     # heroku側からparamsの受け取り
-    # params = request.json
-    params = {
-    'kadenId': 4,
-    'manipulateId': 1,
-    'timerDatetime': '2019-09-08T11:00'
-}
-
+    params = request.json
     kadenId = params['kadenId']
     manipulateId = params['manipulateId']
     timerDatetime = params['timerDatetime']
+    print(params)
+    print(kadenId)
+    print(manipulateId)
+    print(timerDatetime)
+
 
 
     #ステータス管理処理
-    if manipulateId == 0:
-        jsonparams(params, manipulateId)
+    if int(manipulateId) == 0:
         resStatus = status_class.checkStatus (kadenId)
         target_url = ''
         request.get(target_url, resStatus)
 
-    #ON処理
-    elif manipulateId == 1:
-        params = {
-                    'kadenId': 1,
-                    'manipulateId': 1
-                }
-        jsonparams(params, manipulateId)
-        switch_class.Switching(params) #kadenID manipulateIdを渡す
-
-    #OFF処理
-    elif manipulateId == 2:
-        params = {
-                    'kadenId': 1,
-                    'manipulateId': 2
-                }
-        jsonparams(params, manipulateId)          
-        switch_class.Switching(params) #kadenID manipulateIdを渡す
+    #ONOFF処理
+    elif int(manipulateId) in [1, 2]:
+        onOffData = params
+        del onOffData['timerDatetime']
+        print(onOffData)
+        switch_class.Switching(onOffData) #kadenID manipulateIdを渡す
 
     #タイマー処理
-    elif manipulateId == 3:
-        timer_class = Timer()
-        params = {
-                    'kadenId': 1,
-                    'manipulateId': 3,
-                    'timerDatetime': '2019-09-08T11:00'
-                }           
-        timer_class.timerSetting(params) #kadenId manipulateId,timerDatetime
+    elif int(manipulateId) in [3, 4]:
+        timer_class = Timer()      
+        timer_class.timerSetting(params) #kadenId manipulateId,timerDatetimeを渡す
 
-    elif manipulateId == 4:
-        params = {
-                    'kadenId': 1,
-                    'manipulateId': 4,
-                    'timerDatetime': '2019-09-08T11:00'
-                }           
-    timer_class.timerSetting(params) #kadenId manipulateId,timerDatetime
-    
-def jsonparams(params, manipulateId):
-    for jsonData in params.items():
-        if manipulateId == 0:
-            print(jsonData)
-            break
+        
 
 
 
