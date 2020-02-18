@@ -36,4 +36,4 @@ class Switch:
     def kaden_switching(self, kaden_id):
         # rc = remoteController()
         # result = rc.execute(kaden_id)
-        return result
+        return True

@@ -19,13 +19,11 @@ class Status:
         try:
             data = self.get_kaden_json()
             data[self.kaden_id]['status'] = self.manipulate_id
-
             with open(self.JSON_FILE, 'w') as f:
                 json.dump(data, f, indent='\t')
             result = True
         except Exception as e:
-            print(e)
-            result = False
+            raise e
 
         return result
 
