@@ -1,0 +1,37 @@
+# coding=utf-8
+import json
+
+
+class Status:
+
+    JSON_FILE = "kaden.json"
+
+    def __init__(self, param):
+        self.kaden_id = param["kadenId"]
+        self.manipulate_id = param["manipulateId"]
+
+    def get_current_status(self):
+        data = self.get_kaden_json()
+        status = data[self.kaden_id]['status']
+        return status
+
+    def update_status(self):
+        try:
+            data = self.get_kaden_json()
+            data[self.kaden_id]['status'] = self.manipulate_id
+
+            with open(self.JSON_FILE, 'w') as f:
+                json.dump(data, f, indent='\t')
+            result = True
+        except Exception as e:
+            print(e)
+            result = False
+
+        return result
+
+    @staticmethod
+    def get_kaden_json():
+        with open(Status.JSON_FILE, 'r') as f:
+            data = json.load(f)
+
+        return data
