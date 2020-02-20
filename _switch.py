@@ -11,29 +11,22 @@ class Switch:
         self.st = Status(param)
 
     def switching(self):
-        if not self.check():
-            on_off = "ON" if self.st.manipulate_id == "1" else "OFF"
-            msg = "kadenId: " + self.st.kaden_id \
+        kaden_id = self.st.kaden_id
+        manipulate_id = self.st.manipulate_id
+
+        if manipulate_id == self.st.get_current_status():
+            on_off = "ON" if manipulate_id == "1" else "OFF"
+            msg = "kadenId: " + kaden_id \
                   + " already " + on_off
         else:
-            if self.kaden_switching(self.st.kaden_id):
+            if self.kaden_switching():
                 msg = "Success" if self.st.update_status() else "Failed"
             else:
                 msg = "Failed"
 
         return msg
 
-    def check(self):
-        current_status = self.st.get_current_status()
-
-        if self.st.manipulate_id == "1" and current_status == "1":
-            return False
-        elif self.st.manipulate_id == "2" and current_status == "2":
-            return False
-        else:
-            return True
-
-    def kaden_switching(self, kaden_id):
+    def kaden_switching(self):
         # rc = remoteController()
-        # result = rc.execute(kaden_id)
+        # result = rc.execute(self.st.kaden_id)
         return True

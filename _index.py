@@ -7,32 +7,22 @@ from _status import Status
 
 app = Bottle()
 
+exec_settings = {
+    "exec_status": ["0"],
+    "exec_switch": ["1", "2"],
+    "exec_timer": ["3", "4"]
+}
+
 
 @app.route('/index', method='POST')
 def index():
-
+    msg = None
     params = request.json
 
     try:
-        manipulate_id = params["manipulateId"]
-
-        # ステータス管理処理
-        if manipulate_id == "0":
-            st = Status(params)
-            status = st.get_current_status()
-            msg = {"kadenId": st.kaden_id, "status": status}
-
-        # ONOFF処理
-        elif manipulate_id in ["1", "2"]:
-            sw = Switch(params)
-            msg = sw.switching()
-
-        # タイマー処理
-        elif manipulate_id in ["3", "4"]:
-            timer_class = Timer()
-            msg = timer_class.timerSetting(params)
-        else:
-            msg = None
+        for key in exec_settings:
+            if params["manipulateId"] in exec_settings[key]:
+                msg = eval(key)(params)
 
         result = {
             "status": 200,
@@ -46,6 +36,22 @@ def index():
         }
 
     return json.dumps(result, ensure_ascii=False)
+
+
+def exec_status(params):
+    st = Status(params)
+    status = st.get_current_status()
+    return {"kadenId": st.kaden_id, "status": status}
+
+
+def exec_switch(params):
+    sw = Switch(params)
+    return sw.switching()
+
+
+def exec_timer(params):
+    timer_class = Timer()
+    return timer_class.timerSetting(params)
 
 
 if __name__ == "__main__":
