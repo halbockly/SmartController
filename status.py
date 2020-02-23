@@ -1,10 +1,13 @@
 # coding=utf-8
 import json
+import codecs
 
 # kaden.jsonを読みこんだり書き換えたりする役割。
 # kaden.jsonは[ ((kadenId))1 : { name:"クーラー" , signal:"赤外線信号" status:0((0=off,1=on)) } ]の形での管理を想定。
 
 class Status:
+    JSON_FILE = "kaden.json"
+
     # ▼index.py、switch.pyとのやり取り▼
     # index.py(switch.py)から受け取ったidのステータスを取得して返すメソッド================================================
     """引数　：id（kadenId）"""
@@ -43,6 +46,7 @@ class Status:
     """引数　：なし"""
     """戻り値：loadRequestJson（読み込んだkaden.json）"""
     def getKadenStatus(self):
-        openRequestJson = open('kaden.json', 'r')       # kaden.jsonを開く
+        openRequestJson = codecs.open(self.JSON_FILE, 'r', 'utf-8')       # kaden.jsonを開く
         loadRequestJson = json.load(openRequestJson)    # kaden.jsonを読み込む
+        openRequestJson.close()
         return loadRequestJson                          # kaden.jsonを返り値として返す

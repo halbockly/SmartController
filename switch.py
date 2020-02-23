@@ -16,22 +16,23 @@ class Switch:
     # kadenIdとmanipulateIdで家電を操作するメソッド。戻り値としてお言葉がもらえる。=========================================
     """引数　：param { kadenId:x, manipulateId:y }"""
     """戻り値：msg（文字列、処理結果を表す返答メッセージ）"""
-    def Switching(self, param):                     # リクエストのJSON（{ kadenId:x, manipulateId:y }）を引数とする
-        orderJson = self.getRequestStatus(param)         # リクエストのJSONをorderJsonに保持
-        kadenId = orderJson["kadenId"]              # 操作したい家電のID
-        orderStatus = orderJson["manipulateId"]     # どう操作したいか（1:ONにしたい、2:OFFにしたい）
+    def switching(self, param):                     # リクエストのJSON（{ kadenId:x, manipulateId:y }）を引数とする
+        # orderJson = self.getRequestStatus(param)         # リクエストのJSONをorderJsonに保持
+        print(param)
+        kadenId = param["kadenId"]              # 操作したい家電のID
+        orderStatus = param["manipulateId"]     # どう操作したいか（1:ONにしたい、2:OFFにしたい）
                                                     # ※（3:ON予約、4:OFF予約）はindex.py⇒timer.pyの直通で処理
 
         bool_status = self.priorConfirmation(kadenId, orderStatus)   # status.pyへ現在の家電のステータス確認
         if bool_status:                                         # 既に求める状態になっている場合
-            on_off = "ON" if orderStatus == 1 else "OFF"        # status=1なら「ON」、=2なら「OFF」の文字列をセット
+            on_off = "ON" if orderStatus == "1" else "OFF"        # status=1なら「ON」、=2なら「OFF」の文字列をセット
             msg = "既に" + on_off + "になっています"             # 返答メッセージ
             return msg
         else:
             result = self.kadenSwitching(kadenId)                    # remoteController.pyへ赤外線送信依頼
             if result:                                          # 赤外線送信の成否
                 st = Status()
-                rewrite = st.changeStatusJson(kadenId)          # 成功：status.pyへのステータス書き換え依頼
+                rewrite = st.changeStatusJson(kadenId,orderStatus)   # 成功：status.pyへのステータス書き換え依頼
                 msg = "操作完了" if rewrite else "書換失敗"      # 書き換えの成否に応じてmsgをセット
                 return msg
             else:
@@ -40,7 +41,7 @@ class Switch:
 
     # ▼class内の処理用メソッド▼
     def priorConfirmation(self, kadenId, orderStatus):
-        """事前確認。現在の家電の状態を見てremoteContrpller.pyに命令を送るか決める"""
+        """事前確認。現在の家電の状態を見てremoteController.pyに命令を送るか決める"""
         st = Status()
         nowStatus = st.checkStatus(kadenId)         # ステータス確認依頼
         if orderStatus == 1 and nowStatus == 1:     # 求める状態と現在の状態を比較
@@ -58,10 +59,10 @@ class Switch:
         result = rc.execute(kadenId)
         return result
 
-    # index.py もしくは cron からのリクエスト（JSON形式を想定）を取得するメソッド===========================================
-    """引数　：param { kadenId:x, manipulateId:y }"""
-    """戻り値：loadjson（辞書型、引数のJSONデータをpythonで扱いやすいようにした状態）"""
-    def getRequestStatus(self, param):
-        openjson = open(param, 'r')
-        loadJson = json.load(openjson)
-        return loadJson
+    # # index.py もしくは cron からのリクエスト（JSON形式を想定）を取得するメソッド===========================================
+    # """引数　：jsonfile （JSON形式のファイルのファイル名を指定する）"""
+    # """戻り値：loadjson（辞書型、引数のJSONデータをpythonで扱いやすいようにした状態）"""
+    # def getRequestStatus(self, jsonfile):
+    #     openjson = open(jsonfile, 'r')
+    #     loadJson = json.load(openjson)
+    #     return loadJson
