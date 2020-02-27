@@ -9,7 +9,7 @@ from crontab import CronTab as Crontab
 from _switch import Switch
 from datetime import datetime
 
-__SWITCH_COMMAND__ = "python3 /home/pi/SmartControllerTest/cronToSwitch.py"
+__SWITCH_COMMAND__ = "python3 cronToSwitch.py"
 
 
 # Linuxのタスクマネージャー「cron」にタイマー予約をセットする

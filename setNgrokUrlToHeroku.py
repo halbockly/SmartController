@@ -11,7 +11,7 @@ from _timer import CrontabControl
 # 再起動時デーモンから呼び出してもらう。
 #
 
-cmd = './ngrok http 8080 --log=stdout'
+cmd = 'ngrok http 8080 --log=stdout'
 
 from subprocess import Popen, PIPE
 
