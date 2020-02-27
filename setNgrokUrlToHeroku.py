@@ -1,16 +1,17 @@
-# -*- coding: utf-8 -*-
+# coding=utf-8
 
 import subprocess
 import time
 import configparser
 import requests
+from _timer import CrontabControl
 
 # ----------------------------------------------------
 # Herokuに対してngrokのURLを送る為の部品
 # 再起動時デーモンから呼び出してもらう。
 #
 
-cmd = './ngrok http 8080 --log=stdout'
+cmd = 'ngrok http 8080 --log=stdout'
 
 from subprocess import Popen, PIPE
 
@@ -20,6 +21,8 @@ __STARTED_TUNNEL__ = "started tunnel"
 __ADDR__ = "url="
 # 取り出したURLの送信先
 __REQUEST_URL__ = "https://smartcontrollerheroku.herokuapp.com/getNgrokuUrlToHeroku"
+# __REQUEST_URL__ = "https://localhost:8081/getNgrokuUrlToHeroku"
+
 # kaden.json PATH
 __KADEN_JSON_PATH__ = "kaden.json"
 
@@ -51,10 +54,10 @@ for line in iter(p.stdout.readline, b''):
 
         break
 
-# URLを送信する。※未検証　でもPOSTを送信するメソッドが.postなのはわかりやすくていいね。
+# URLを送信する。
 response = requests.post(__REQUEST_URL__, data={"url": url, 'file': kadenJsonFile})
 
-print('status_code:' + str(response.status_code))
+print(__REQUEST_URL__ + ' status_code:' + str(response.status_code))
 
 if response.status_code != 200:
     print("ERROR : STOP setNgrokUrlToHeroku")
@@ -65,14 +68,13 @@ else:
 # このメソッドが終わるとngrokの起動状態も破棄されるのでとりあえず回しておく。
 # 何かheartbeatとか終了SEQとかここに入れておくといいかも
 
-while (True):
-    time.sleep(1)
+tab_file = 'reserved.tab'  # 予定を書き込むファイル
 
+try:
+    while (True):
+        time.sleep(1)
 
-
-
-
-
-
-
+except Exception as e:
+    # Ctrl + C 等で強制終了された場合はここへくる。
+    print(e)
 
