@@ -37,7 +37,8 @@ class Timer:
         print("timer.py makeOrder START")
         kadenId = orderJson['kadenId']
         order = orderJson['manipulateId']  # 3:TimerON 4:TimerOFF
-        if (order != 1)  # 1:ON 2:OFF    ※order=3なら1を、そうでないなら2をセットする
+
+        if (order != 1): # 1:ON 2:OFF    ※order=3なら1を、そうでないなら2をセットする
             order = 1 if order == 3 else 2
 
         strTime = orderJson['timer_datetime']  # cronで命令を飛ばす日時　例）'2019-09-08T11:00'

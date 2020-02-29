@@ -68,8 +68,6 @@ else:
 # このメソッドが終わるとngrokの起動状態も破棄されるのでとりあえず回しておく。
 # 何かheartbeatとか終了SEQとかここに入れておくといいかも
 
-tab_file = 'reserved.tab'  # 予定を書き込むファイル
-
 try:
     while (True):
         time.sleep(1)

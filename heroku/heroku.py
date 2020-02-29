@@ -17,14 +17,9 @@ YOUR_CHANNEL_SECRET = os.environ['YOUR_CHANNEL_SECRET']
 reply_url = 'https://api.line.me/v2/bot/message/reply'
 push_url = 'https://api.line.me/v2/bot/message/push'
 
-ini = configparser.ConfigParser()
-ini.read('./tmp/ngrokToHeroku.ini', 'UTF-8')
-
-__INDEXPY_PORT__ = '/index'
+__INDEXPY_URL__ = '/index'
 
 app = Bottle()
-
-
 
 # WEBHOOKで指定したURL(~/callback)にAPIから送られてくるJSONを受ける処理
 @app.route('/callback', method='POST')
@@ -65,6 +60,10 @@ def callback():
 
 def reply_to_line(body):
 
+    ini = configparser.ConfigParser()
+    ini.read('./tmp/ngrokToHeroku.ini', 'UTF-8')
+    # ngrokで指定されるURL
+    target_url = ini['ngrok']['url'] + __INDEXPY_PORT__
 
     # 家電名、状態、数などを取得
     # kaden.jsonは同ディレクトリ？
@@ -93,10 +92,6 @@ def reply_to_line(body):
                     # それぞれの家電の状態確認してjsonに反映するために、
                     # ラズパイのindex.pyにリクエスト送って、jsonを更新
 
-                    ini = configparser.ConfigParser()
-                    ini.read('./tmp/ngrokToHeroku.ini', 'UTF-8')
-                    # ngrokで指定されるURL
-                    target_url = ini['ngrok']['url'] + __INDEXPY_PORT__
                     method = 'POST'
                     param = {
                         'manipulateId': '0'
@@ -160,10 +155,6 @@ def reply_to_line(body):
                 # manipulateId → 1=ON, 2=OFF
                 kadenId = manipulated_on_kadenId
 
-                ini = configparser.ConfigParser()
-                ini.read('./tmp/ngrokToHeroku.ini', 'UTF-8')
-                # index.pyが受け取るURL
-                target_url = ini['ngrok']['url'] + __INDEXPY_PORT__
                 headers = {
                     'Content-Type': 'application/json'
                 }
@@ -184,15 +175,9 @@ def reply_to_line(body):
                 manipulated_off_kadenId = postback_data[19:]
                 responses.append(LineReplyMessage.make_text_response(kaden_info[manipulated_off_kadenId]['name'] + 'の電源を消すよ'))
 
-
                 # kadenId　→　操作対象
                 # manipulateId → 1=ON, 2=OFF
                 kadenId = manipulated_off_kadenId
-
-                ini = configparser.ConfigParser()
-                ini.read('./tmp/ngrokToHeroku.ini', 'UTF-8')
-                # index.pyが受け取るURL
-                target_url = ini['ngrok']['url'] + __INDEXPY_PORT__
                 headers = {'Content-Type': 'application/json'}
 
                 # postでindex.pyに送信
@@ -226,10 +211,6 @@ def reply_to_line(body):
                 kadenId = selected_timer_kadenId
                 timer_datetime = postback_params
 
-                ini = configparser.ConfigParser()
-                ini.read('./tmp/ngrokToHeroku.ini', 'UTF-8')
-
-                target_url = ini['ngrok']['url'] + __INDEXPY_PORT__
                 headers = {'Content-Type': 'application/json'}
 
                 requests.post(
@@ -253,11 +234,7 @@ def reply_to_line(body):
                 kadenId = selected_timer_kadenId
                 timer_datetime = postback_params
 
-                ini = configparser.ConfigParser()
-                ini.read('./tmp/ngrokToHeroku.ini', 'UTF-8')
-                target_url = ini['ngrok']['url'] + __INDEXPY_PORT__
                 headers = {'Content-Type': 'application/json'}
-
                 requests.post(
                     target_url ,
                     data=json.dumps({
