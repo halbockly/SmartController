@@ -63,7 +63,7 @@ def reply_to_line(body):
     ini = configparser.ConfigParser()
     ini.read('./tmp/ngrokToHeroku.ini', 'UTF-8')
     # ngrokで指定されるURL
-    target_url = ini['ngrok']['url'] + __INDEXPY_PORT__
+    target_url = ini['ngrok']['url'] + __INDEXPY_URL__
 
     # 家電名、状態、数などを取得
     # kaden.jsonは同ディレクトリ？
