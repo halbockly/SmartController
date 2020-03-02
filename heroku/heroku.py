@@ -21,10 +21,74 @@ __INDEXPY_URL__ = '/index'
 
 app = Bottle()
 
+kaden_json = open('./tmp/kaden.json')
+kaden_info = json.load(kaden_json)
+
+ini = configparser.ConfigParser()
+ini.read('./tmp/ngrokToHeroku.ini', 'UTF-8')
+# ngrokで指定されるURL
+target_url = ini['ngrok']['url'] + __INDEXPY_URL__
+
+POWER_ON = 1
+POWER_OFF = 2
+TIMER_FROM = 3
+TIMER_TO = 4
+
+line_events = {
+    'show_main_menu': 'message',
+    'show_manipulate_menu': 'postback'
+}
+
+show_menu_words = [
+    'メニュー',
+    'めにゅー',
+    'menu',
+    'Menu',
+    'MENU'
+]
+
+COMMON_REPLY_EVENTS = {
+    'SHOW_MENU': 0,
+    'RETURN_TEXT': 1,
+    'SHOW_STATUS': 2,
+    'SHOW_SELECT_KADEN_MENU': 3,
+    'SHOW_MANIPULATE_KADEN_MENU': 4,
+    'SHOW_SET_TIMER_MENU': 5,
+}
+
+COMMON_REPLY_EVENTS_FUNCTION = {
+    0: 'mainmenu_response',
+    1: 'make_text_response',
+    2: 'show_status',
+    3: 'manipulate_kaden_menu',
+    4: 'manipulate_response',
+    5: 'timer_response',
+}
+
+COMMON_REPLY_EVENTS_WORDS = {
+    'NOT_TEXT': 'テキストで入力してよ、ばか',
+    'NOT_SHOW_MENU_WORD': 'メニューって入力してね',
+}
+
+COMMON_REPLY_EVENTS_TEXT = {
+    1: 'の電源を入れるよ',
+    2: 'の電源を消すよ',
+    3: [
+        'から',
+        'の電源を点けるよ'
+    ],
+    4: [
+        'に',
+        'の電源を消すよ'
+    ]
+}
+
+REPLY_CLASS_NAME = 'LineReplyMessage.'
+
+
 # WEBHOOKで指定したURL(~/callback)にAPIから送られてくるJSONを受ける処理
 @app.route('/callback', method='POST')
 def callback():
-
 
     # -------------------------------------------
     # ここからlineからのアクセスか判別する処理
@@ -60,194 +124,189 @@ def callback():
 
 def reply_to_line(body):
 
-    ini = configparser.ConfigParser()
+
     ini.read('./tmp/ngrokToHeroku.ini', 'UTF-8')
     # ngrokで指定されるURL
     target_url = ini['ngrok']['url'] + __INDEXPY_URL__
 
-    # 家電名、状態、数などを取得
-    # kaden.jsonは同ディレクトリ？
-    kaden_json = open('./tmp/kaden.json')
-    kaden_info = json.load(kaden_json)
-
-
+    # message or postbackで分岐
     for event in body['events']:
-        responses = []
-
-        # 返信する時に必要となるトークン
         replyToken = event['replyToken']
-
         type = event['type']
 
-        if type == 'message':
-
-            message = event['message']
-
-            if message['type'] == 'text':
-
-                user_input = message['text']
-
-                if user_input == 'メニュー':
-
-                    # それぞれの家電の状態確認してjsonに反映するために、
-                    # ラズパイのindex.pyにリクエスト送って、jsonを更新
-
-                    method = 'POST'
-                    param = {
-                        'manipulateId': '0'
-                    }
-                    headers = {'Content-Type': 'application/json'}
-
-                    # 状態確認して状態のjson更新する。manipulateId=0→ステータス確認
-                    requests.post(
-                        target_url,
-                        param,
-                        headers=headers
-                    )
-
-                    responses.append(
-                        LineReplyMessage.mainmenu_response())
-
-                else:
-                    responses.append(
-                        LineReplyMessage.make_text_response('メニュー見たいならメニューって入れてね'))
-
-            else:
-                responses.append(
-                    LineReplyMessage.make_text_response('テキストで入力してよ、ばか'))
+        for key in line_events:
+            if type == line_events[key]:
+                responses = eval(key)(event[type])
+                LineReplyMessage.send_reply(replyToken, responses)
 
 
+# messageの場合はこのメソッドへ
+def show_main_menu(param):
 
-        # ボタンによって送られてきたイベントを処理する
-        if type == 'postback':
-
-            postback_data = event['postback']['data']
-
-            # 家電を選ぶメニューを表示。これがメインメニュー。
-            if postback_data == 'select=manipulate':
-                responses.append(LineReplyMessage.manipulate_kaden_menu(kaden_info))
-
-
-            # 操作する家電を選ぶメニュー。
-            elif re.match(r'select=manipulate&kadenId=\d+', postback_data):
-
-                selected_kadenId = postback_data[26:]
-
-                # 操作する家電のIDをテキストで返し、操作画面を返す。
-                responses.append(LineReplyMessage.make_text_response(kaden_info[selected_kadenId]['name'] + 'を操作するよ'))
-                responses.append(LineReplyMessage.manipulate_response(selected_kadenId))
-
-
-            # ステータスを表示する処理
-            elif postback_data == 'select=status':
-                # responses.append(LineReplyMessage.make_text_response('現在の家電の状態を表示する'))
-                responses.append(LineReplyMessage.show_status(kaden_info))
+    message = param
+    if message['type'] == 'text':
+        if message['text'] in show_menu_words:
+            method = 'POST'
+            headers = {'Content-Type': 'application/json'}
+            requests.post(
+                target_url,
+                json.dumps({
+                    'manipulateId': '0'
+                }),
+                headers=headers
+            )
+            return create_reply_menu(COMMON_REPLY_EVENTS['SHOW_MENU'])
+        else:
+            return create_reply_message(COMMON_REPLY_EVENTS['RETURN_TEXT'], COMMON_REPLY_EVENTS_WORDS['NOT_SHOW_MENU_WORD'])
+    else:
+        return create_reply_message(COMMON_REPLY_EVENTS['RETURN_TEXT'], COMMON_REPLY_EVENTS_WORDS['NOT_TEXT'])
 
 
-            # 電源をONにする処理
-            elif re.match(r'action=on&kadenId=\d+', postback_data):
-                manipulated_on_kadenId = postback_data[18:]
-                responses.append(LineReplyMessage.make_text_response(kaden_info[manipulated_on_kadenId]['name'] + 'の電源を入れるよ'))
+# postbackの場合はこのメソッドへ
+def show_manipulate_menu(param):
 
-                # 選んだ家電の状態確認して電源をONにして、書き換える
+    postback_data = param['data']
 
-                # kadenId　→　操作対象
-                # manipulateId → 1=ON, 2=OFF
-                kadenId = manipulated_on_kadenId
+    # 操作関連
+    if re.match(r'select=manipulate.*', postback_data):
+        return select_kaden_menu(postback_data)
 
-                headers = {
-                    'Content-Type': 'application/json'
-                }
+    # 状態確認系
+    elif postback_data == 'select=status':
+        return create_reply_menu(COMMON_REPLY_EVENTS['SHOW_STATUS'], kaden_info)
 
-                # getでindex.pyに送信
-                requests.post(
-                    target_url,
-                    json.dumps({
-                        'kadenId': str(kadenId),
-                        'manipulateId': '1'
-                    }),
-                    headers=headers
-                )
+    # ON OFF系
+    elif re.match(r'action=o.*', postback_data):
+        return manipulate_power(postback_data)
+
+    # Timer系
+    elif re.match(r'.*timer.*', postback_data):
+        return manipulate_timer(postback_data, param)
 
 
-            # 電源をOFFにする処理
-            elif re.match(r'action=off&kadenId=\d+', postback_data):
-                manipulated_off_kadenId = postback_data[19:]
-                responses.append(LineReplyMessage.make_text_response(kaden_info[manipulated_off_kadenId]['name'] + 'の電源を消すよ'))
+# 返すテキストを作るメソッド
+def create_reply_message(event, *args):
 
-                # kadenId　→　操作対象
-                # manipulateId → 1=ON, 2=OFF
-                kadenId = manipulated_off_kadenId
-                headers = {'Content-Type': 'application/json'}
-
-                # postでindex.pyに送信
-                requests.post(
-                    target_url,
-                    data=json.dumps({
-                        'kadenId': str(kadenId),
-                        'manipulateId': '2'
-                    }),
-                    headers = headers
-                )
+    func = REPLY_CLASS_NAME + COMMON_REPLY_EVENTS_FUNCTION[event]
+    res = [eval(func)(args[0])] if len(args) == 1 else [eval(func)(args[0], args[1])]
+    return res
 
 
-            # タイマーのモードを設定する画面
-            elif re.match(r'select=timer&kadenId=\d+', postback_data):
-                selected_timer_kadenId = postback_data[21:]
+# 返すメニューを作るメソッド
+def create_reply_menu(event, *args):
 
-                # タイマー設定画面を返す。
-                responses.append(LineReplyMessage.timer_response(kaden_info, selected_timer_kadenId))
+    func = REPLY_CLASS_NAME + COMMON_REPLY_EVENTS_FUNCTION[event]
+    if len(args) == 0:
+        res = [eval(func)()]
 
+    elif len(args) == 1:
+        res = [eval(func)(args[0])]
 
-            # 入タイマーの設定
-            elif re.match(r'action=timer&status=from&kadenId=\d+', postback_data):
-                selected_timer_kadenId = postback_data[33:]
-                postback_params = event['postback']['params']['datetime']
-                responses.append(LineReplyMessage.make_text_response(postback_params + 'から' + kaden_info[selected_timer_kadenId]['name'] + 'を点けるよ'))
+    elif len(args) == 2:
+        res = [eval(func)(args[0], args[1])]
 
-                # 入力した時間と選んだ家電IDをindexに渡す。
-                # 時刻は「2019-09-08T11:00」といった形式で返るためそのまま渡す。詳しい動作はテストボット参照
-                # timer_manipulateIdは、1=タイマーON, 2=タイマーOFF
-                kadenId = selected_timer_kadenId
-                timer_datetime = postback_params
-
-                headers = {'Content-Type': 'application/json'}
-
-                requests.post(
-                    target_url,
-                    json.dumps({
-                        'kadenId': str(kadenId),
-                        'timer_datetime': str(timer_datetime),
-                        'manipulateId': '3',
-                    }),
-                    headers = headers
-                )
-
-            # 切タイマーの設定
-            elif re.match(r'action=timer&status=to&kadenId=\d+', postback_data):
-                selected_timer_kadenId = postback_data[31:]
-                postback_params = event['postback']['params']['datetime']
-                responses.append(LineReplyMessage.make_text_response(postback_params + 'まで' + kaden_info[selected_timer_kadenId]['name'] + 'を点けるよ'))
-
-                # 入力した時間と選んだ家電IDをindexに渡す。
-                # 時刻は「2019-09-08T11:00」といった形式で返るためそのまま渡す。詳しい動作はテストボット参照
-                kadenId = selected_timer_kadenId
-                timer_datetime = postback_params
-
-                headers = {'Content-Type': 'application/json'}
-                requests.post(
-                    target_url ,
-                    data=json.dumps({
-                        'kadenId': str(kadenId),
-                        'timer_datetime': str(timer_datetime),
-                        'manipulateId': '4',
-                    }),
-                    headers = headers
-                )
+    return res
 
 
-        LineReplyMessage.send_reply(replyToken, responses)
-        # トークンと配列を元に返信
+# 家電を選ぶメニューを返すメソッド
+def select_kaden_menu(postback_data):
+
+    if re.match(r'.*kadenId.*', postback_data):
+        selected_kadenId = postback_data[26:]
+        return create_reply_menu(COMMON_REPLY_EVENTS['SHOW_MANIPULATE_KADEN_MENU'], selected_kadenId)
+
+    else:
+        return create_reply_menu(COMMON_REPLY_EVENTS['SHOW_SELECT_KADEN_MENU'], kaden_info)
+
+
+# 電源関連の操作メソッド
+def manipulate_power(postback_data):
+
+    if re.match(r'action=on.+', postback_data):
+        selected_kadenId = postback_data[18:]
+        kadenId = selected_kadenId
+        headers = {
+            'Content-Type': 'application/json'
+        }
+        requests.post(
+            target_url,
+            json.dumps({
+                'kadenId': str(kadenId),
+                'manipulateId': '1'
+            }),
+            headers=headers
+        )
+        msg = create_manipulate_reply_message(POWER_ON, kaden_info[selected_kadenId]['name'])
+        return create_reply_message(COMMON_REPLY_EVENTS['RETURN_TEXT'], msg)
+
+    elif re.match(r'action=off.+', postback_data):
+        selected_kadenId = postback_data[19:]
+        kadenId = selected_kadenId
+        headers = {'Content-Type': 'application/json'}
+        requests.post(
+            target_url,
+            json.dumps({
+                'kadenId': str(kadenId),
+                'manipulateId': '2'
+            }),
+            headers = headers
+        )
+        msg = create_manipulate_reply_message(POWER_OFF, kaden_info[selected_kadenId]['name'])
+        return create_reply_message(COMMON_REPLY_EVENTS['RETURN_TEXT'], msg)
+
+
+# タイマー関連の操作メソッド
+def manipulate_timer(postback_data, param):
+
+    if re.match(r'select.*', postback_data):
+        selected_kadenId = postback_data[21:]
+        return create_reply_menu(COMMON_REPLY_EVENTS['SHOW_SET_TIMER_MENU'], kaden_info, selected_kadenId)
+
+    elif re.match(r'.*from.*', postback_data):
+        selected_kadenId = postback_data[33:]
+        kadenId = selected_kadenId
+        timer_datetime = postback_params
+        headers = {'Content-Type': 'application/json'}
+        requests.post(
+            target_url,
+            json.dumps({
+                'kadenId': str(kadenId),
+                'timer_datetime': str(timer_datetime),
+                'manipulateId': '3',
+            }),
+            headers = headers
+        )
+        params = param['params']['datetime']
+        msg = create_manipulate_reply_message(TIMER_FROM, params, kaden_info[selected_kadenId]['name'])
+        return create_reply_message(COMMON_REPLY_EVENTS['RETURN_TEXT'], msg)
+
+    elif re.match(r'.*to.*', postback_data):
+        selected_kadenId = postback_data[31:]
+        kadenId = selected_kadenId
+        timer_datetime = postback_params
+        headers = {'Content-Type': 'application/json'}
+        requests.post(
+            target_url ,
+            json.dumps({
+                'kadenId': str(kadenId),
+                'timer_datetime': str(timer_datetime),
+                'manipulateId': '4',
+            }),
+            headers = headers
+        )
+        params = param['params']['datetime']
+        msg = create_manipulate_reply_message(TIMER_TO, params, kaden_info[selected_kadenId]['name'])
+        return create_reply_message(COMMON_REPLY_EVENTS['RETURN_TEXT'], msg)
+
+
+# 操作のメッセージを作るメソッド
+def create_manipulate_reply_message(event, *args):
+
+    if event == 1 or event == 2:
+        res = args[0] + COMMON_REPLY_EVENTS_TEXT[event]
+    else:
+        res = args[0] + COMMON_REPLY_EVENTS_TEXT[event][0] + args[1] + COMMON_REPLY_EVENTS_TEXT[event][1]
+    return res
 
 
 class LineReplyMessage:
