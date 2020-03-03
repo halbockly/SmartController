@@ -21,14 +21,6 @@ __INDEXPY_URL__ = '/index'
 
 app = Bottle()
 
-kaden_json = open('./tmp/kaden.json')
-kaden_info = json.load(kaden_json)
-
-ini = configparser.ConfigParser()
-ini.read('./tmp/ngrokToHeroku.ini', 'UTF-8')
-# ngrokで指定されるURL
-target_url = ini['ngrok']['url'] + __INDEXPY_URL__
-
 POWER_ON = 1
 POWER_OFF = 2
 TIMER_FROM = 3
@@ -115,198 +107,214 @@ def callback():
         abort(400)
     # -------------------------------------------
 
-
-    # jsonを受け取る。
-    reply_to_line(request.json)
+    # イベントクラス=Lineイベントの種類によって動く
+    event = Event()
+    event.reply_to_line(request.json)
 
     return {'statusCode': 200, 'body': '{}'}
 
 
-def reply_to_line(body):
+
+class Event:
 
 
-    ini.read('./tmp/ngrokToHeroku.ini', 'UTF-8')
-    # ngrokで指定されるURL
-    target_url = ini['ngrok']['url'] + __INDEXPY_URL__
+    def __init__(self):
+        kaden_json = open('./tmp/kaden.json')
+        self.kaden_info = json.load(kaden_json)
 
-    # message or postbackで分岐
-    for event in body['events']:
-        replyToken = event['replyToken']
-        type = event['type']
+        ini = configparser.ConfigParser()
+        ini.read('./tmp/ngrokToHeroku.ini', 'UTF-8')
 
-        for key in line_events:
-            if type == line_events[key]:
-                responses = eval(key)(event[type])
-                LineReplyMessage.send_reply(replyToken, responses)
+        # ngrokで指定されるURL
+        self.target_url = ini['ngrok']['url'] + __INDEXPY_URL__
+
+    def reply_to_line(self, body):
+
+        # message or postbackで分岐
+        for event in body['events']:
+            replyToken = event['replyToken']
+            type = event['type']
+
+            for key in line_events:
+                if type == line_events[key]:
+                    responses = eval('self.' + key)(event[type])
+                    LineReplyMessage.send_reply(replyToken, responses)
 
 
-# messageの場合はこのメソッドへ
-def show_main_menu(param):
+    # messageの場合はこのメソッドへ
+    def show_main_menu(self, param):
 
-    message = param
-    if message['type'] == 'text':
-        if message['text'] in show_menu_words:
-            method = 'POST'
-            headers = {'Content-Type': 'application/json'}
+        message = param
+        if message['type'] == 'text':
+            if message['text'] in show_menu_words:
+                method = 'POST'
+                headers = {'Content-Type': 'application/json'}
+                requests.post(
+                    self.target_url,
+                    json.dumps({
+                        'manipulateId': '0'
+                    }),
+                    headers=headers
+                )
+                return self.create_reply_menu(COMMON_REPLY_EVENTS['SHOW_MENU'])
+            else:
+                return self.create_reply_message(COMMON_REPLY_EVENTS['RETURN_TEXT'], COMMON_REPLY_EVENTS_WORDS['NOT_SHOW_MENU_WORD'])
+        else:
+            return self.create_reply_message(COMMON_REPLY_EVENTS['RETURN_TEXT'], COMMON_REPLY_EVENTS_WORDS['NOT_TEXT'])
+
+
+    # postbackの場合はこのメソッドへ
+    def show_manipulate_menu(self, param):
+
+        postback_data = param['data']
+
+        # 操作関連
+        if re.match(r'select=manipulate.*', postback_data):
+            return self.select_kaden_menu(postback_data)
+
+        # 状態確認系
+        elif postback_data == 'select=status':
+            return self.create_reply_menu(COMMON_REPLY_EVENTS['SHOW_STATUS'], self.kaden_info)
+
+        # ON OFF系
+        elif re.match(r'action=o.*', postback_data):
+            return self.manipulate_power(postback_data)
+
+        # Timer系
+        elif re.match(r'.*timer.*', postback_data):
+            return self.manipulate_timer(postback_data, param)
+
+
+    # 返すテキストを作るメソッド
+    def create_reply_message(self, event, *args):
+
+        func = REPLY_CLASS_NAME + COMMON_REPLY_EVENTS_FUNCTION[event]
+        res = [eval(func)(args[0])] if len(args) == 1 else [eval(func)(args[0], args[1])]
+        return res
+
+
+    # 返すメニューを作るメソッド
+    def create_reply_menu(self, event, *args):
+
+        func = REPLY_CLASS_NAME + COMMON_REPLY_EVENTS_FUNCTION[event]
+        if len(args) == 0:
+            res = [eval(func)()]
+
+        elif len(args) == 1:
+            res = [eval(func)(args[0])]
+
+        elif len(args) == 2:
+            res = [eval(func)(args[0], args[1])]
+
+        return res
+
+
+    # 家電を選ぶメニューを返すメソッド
+    def select_kaden_menu(self, postback_data):
+
+        # 操作する家電を選ぶ画面
+        if re.match(r'.*kadenId.*', postback_data):
+            selected_kadenId = postback_data[26:]
+            return self.create_reply_menu(COMMON_REPLY_EVENTS['SHOW_MANIPULATE_KADEN_MENU'], selected_kadenId)
+
+        # 家電を選ぶ画面
+        else:
+            return self.create_reply_menu(COMMON_REPLY_EVENTS['SHOW_SELECT_KADEN_MENU'], self.kaden_info)
+
+
+    # 電源関連の操作メソッド
+    def manipulate_power(self, postback_data):
+
+        # 電源ON
+        if re.match(r'action=on.+', postback_data):
+            selected_kadenId = postback_data[18:]
+            kadenId = selected_kadenId
+            headers = {
+                'Content-Type': 'application/json'
+            }
             requests.post(
-                target_url,
+                self.target_url,
                 json.dumps({
-                    'manipulateId': '0'
+                    'kadenId': str(kadenId),
+                    'manipulateId': '1'
                 }),
                 headers=headers
             )
-            return create_reply_menu(COMMON_REPLY_EVENTS['SHOW_MENU'])
+            msg = self.create_manipulate_reply_message(POWER_ON, self.kaden_info[selected_kadenId]['name'])
+            return self.create_reply_message(COMMON_REPLY_EVENTS['RETURN_TEXT'], msg)
+
+        # 電源OFF
+        elif re.match(r'action=off.+', postback_data):
+            selected_kadenId = postback_data[19:]
+            kadenId = selected_kadenId
+            headers = {'Content-Type': 'application/json'}
+            requests.post(
+                self.target_url,
+                json.dumps({
+                    'kadenId': str(kadenId),
+                    'manipulateId': '2'
+                }),
+                headers = headers
+            )
+            msg = self.create_manipulate_reply_message(POWER_OFF, self.kaden_info[selected_kadenId]['name'])
+            return self.create_reply_message(COMMON_REPLY_EVENTS['RETURN_TEXT'], msg)
+
+
+    # タイマー関連の操作メソッド
+    def manipulate_timer(self, postback_data, param):
+
+        # タイマーの種類を選ぶ画面
+        if re.match(r'select.*', postback_data):
+            selected_kadenId = postback_data[21:]
+            return self.create_reply_menu(COMMON_REPLY_EVENTS['SHOW_SET_TIMER_MENU'], self.kaden_info, selected_kadenId)
+
+        # 入タイマーの画面
+        elif re.match(r'.*from.*', postback_data):
+            selected_kadenId = postback_data[33:]
+            kadenId = selected_kadenId
+            timer_datetime = postback_params
+            headers = {'Content-Type': 'application/json'}
+            requests.post(
+                self.target_url,
+                json.dumps({
+                    'kadenId': str(kadenId),
+                    'timer_datetime': str(timer_datetime),
+                    'manipulateId': '3',
+                }),
+                headers = headers
+            )
+            params = param['params']['datetime']
+            msg = self.create_manipulate_reply_message(TIMER_FROM, params, self.kaden_info[selected_kadenId]['name'])
+            return self.create_reply_message(COMMON_REPLY_EVENTS['RETURN_TEXT'], msg)
+
+        # 切タイマーの画面
+        elif re.match(r'.*to.*', postback_data):
+            selected_kadenId = postback_data[31:]
+            kadenId = selected_kadenId
+            timer_datetime = postback_params
+            headers = {'Content-Type': 'application/json'}
+            requests.post(
+                self.target_url ,
+                json.dumps({
+                    'kadenId': str(kadenId),
+                    'timer_datetime': str(timer_datetime),
+                    'manipulateId': '4',
+                }),
+                headers = headers
+            )
+            params = param['params']['datetime']
+            msg = self.create_manipulate_reply_message(TIMER_TO, params, self.kaden_info[selected_kadenId]['name'])
+            return self.create_reply_message(COMMON_REPLY_EVENTS['RETURN_TEXT'], msg)
+
+
+    # 操作のメッセージを作るメソッド
+    def create_manipulate_reply_message(self, event, *args):
+
+        if event == 1 or event == 2:
+            res = args[0] + COMMON_REPLY_EVENTS_TEXT[event]
         else:
-            return create_reply_message(COMMON_REPLY_EVENTS['RETURN_TEXT'], COMMON_REPLY_EVENTS_WORDS['NOT_SHOW_MENU_WORD'])
-    else:
-        return create_reply_message(COMMON_REPLY_EVENTS['RETURN_TEXT'], COMMON_REPLY_EVENTS_WORDS['NOT_TEXT'])
-
-
-# postbackの場合はこのメソッドへ
-def show_manipulate_menu(param):
-
-    postback_data = param['data']
-
-    # 操作関連
-    if re.match(r'select=manipulate.*', postback_data):
-        return select_kaden_menu(postback_data)
-
-    # 状態確認系
-    elif postback_data == 'select=status':
-        return create_reply_menu(COMMON_REPLY_EVENTS['SHOW_STATUS'], kaden_info)
-
-    # ON OFF系
-    elif re.match(r'action=o.*', postback_data):
-        return manipulate_power(postback_data)
-
-    # Timer系
-    elif re.match(r'.*timer.*', postback_data):
-        return manipulate_timer(postback_data, param)
-
-
-# 返すテキストを作るメソッド
-def create_reply_message(event, *args):
-
-    func = REPLY_CLASS_NAME + COMMON_REPLY_EVENTS_FUNCTION[event]
-    res = [eval(func)(args[0])] if len(args) == 1 else [eval(func)(args[0], args[1])]
-    return res
-
-
-# 返すメニューを作るメソッド
-def create_reply_menu(event, *args):
-
-    func = REPLY_CLASS_NAME + COMMON_REPLY_EVENTS_FUNCTION[event]
-    if len(args) == 0:
-        res = [eval(func)()]
-
-    elif len(args) == 1:
-        res = [eval(func)(args[0])]
-
-    elif len(args) == 2:
-        res = [eval(func)(args[0], args[1])]
-
-    return res
-
-
-# 家電を選ぶメニューを返すメソッド
-def select_kaden_menu(postback_data):
-
-    if re.match(r'.*kadenId.*', postback_data):
-        selected_kadenId = postback_data[26:]
-        return create_reply_menu(COMMON_REPLY_EVENTS['SHOW_MANIPULATE_KADEN_MENU'], selected_kadenId)
-
-    else:
-        return create_reply_menu(COMMON_REPLY_EVENTS['SHOW_SELECT_KADEN_MENU'], kaden_info)
-
-
-# 電源関連の操作メソッド
-def manipulate_power(postback_data):
-
-    if re.match(r'action=on.+', postback_data):
-        selected_kadenId = postback_data[18:]
-        kadenId = selected_kadenId
-        headers = {
-            'Content-Type': 'application/json'
-        }
-        requests.post(
-            target_url,
-            json.dumps({
-                'kadenId': str(kadenId),
-                'manipulateId': '1'
-            }),
-            headers=headers
-        )
-        msg = create_manipulate_reply_message(POWER_ON, kaden_info[selected_kadenId]['name'])
-        return create_reply_message(COMMON_REPLY_EVENTS['RETURN_TEXT'], msg)
-
-    elif re.match(r'action=off.+', postback_data):
-        selected_kadenId = postback_data[19:]
-        kadenId = selected_kadenId
-        headers = {'Content-Type': 'application/json'}
-        requests.post(
-            target_url,
-            json.dumps({
-                'kadenId': str(kadenId),
-                'manipulateId': '2'
-            }),
-            headers = headers
-        )
-        msg = create_manipulate_reply_message(POWER_OFF, kaden_info[selected_kadenId]['name'])
-        return create_reply_message(COMMON_REPLY_EVENTS['RETURN_TEXT'], msg)
-
-
-# タイマー関連の操作メソッド
-def manipulate_timer(postback_data, param):
-
-    if re.match(r'select.*', postback_data):
-        selected_kadenId = postback_data[21:]
-        return create_reply_menu(COMMON_REPLY_EVENTS['SHOW_SET_TIMER_MENU'], kaden_info, selected_kadenId)
-
-    elif re.match(r'.*from.*', postback_data):
-        selected_kadenId = postback_data[33:]
-        kadenId = selected_kadenId
-        timer_datetime = postback_params
-        headers = {'Content-Type': 'application/json'}
-        requests.post(
-            target_url,
-            json.dumps({
-                'kadenId': str(kadenId),
-                'timer_datetime': str(timer_datetime),
-                'manipulateId': '3',
-            }),
-            headers = headers
-        )
-        params = param['params']['datetime']
-        msg = create_manipulate_reply_message(TIMER_FROM, params, kaden_info[selected_kadenId]['name'])
-        return create_reply_message(COMMON_REPLY_EVENTS['RETURN_TEXT'], msg)
-
-    elif re.match(r'.*to.*', postback_data):
-        selected_kadenId = postback_data[31:]
-        kadenId = selected_kadenId
-        timer_datetime = postback_params
-        headers = {'Content-Type': 'application/json'}
-        requests.post(
-            target_url ,
-            json.dumps({
-                'kadenId': str(kadenId),
-                'timer_datetime': str(timer_datetime),
-                'manipulateId': '4',
-            }),
-            headers = headers
-        )
-        params = param['params']['datetime']
-        msg = create_manipulate_reply_message(TIMER_TO, params, kaden_info[selected_kadenId]['name'])
-        return create_reply_message(COMMON_REPLY_EVENTS['RETURN_TEXT'], msg)
-
-
-# 操作のメッセージを作るメソッド
-def create_manipulate_reply_message(event, *args):
-
-    if event == 1 or event == 2:
-        res = args[0] + COMMON_REPLY_EVENTS_TEXT[event]
-    else:
-        res = args[0] + COMMON_REPLY_EVENTS_TEXT[event][0] + args[1] + COMMON_REPLY_EVENTS_TEXT[event][1]
-    return res
+            res = args[0] + COMMON_REPLY_EVENTS_TEXT[event][0] + args[1] + COMMON_REPLY_EVENTS_TEXT[event][1]
+        return res
 
 
 class LineReplyMessage:
