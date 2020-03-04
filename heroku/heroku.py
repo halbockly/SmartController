@@ -128,6 +128,7 @@ class Event:
         # ngrokで指定されるURL
         self.target_url = ini['ngrok']['url'] + __INDEXPY_URL__
 
+
     def reply_to_line(self, body):
 
         # message or postbackで分岐
@@ -147,15 +148,13 @@ class Event:
         message = param
         if message['type'] == 'text':
             if message['text'] in show_menu_words:
-                method = 'POST'
-                headers = {'Content-Type': 'application/json'}
-                requests.post(
-                    self.target_url,
-                    json.dumps({
-                        'manipulateId': '0'
-                    }),
-                    headers=headers
-                )
+
+                # kaden.jsonの状態確認
+                response = self.request_to_index(manipulateId)
+
+                # response情報を元にkaden.jsonの更新
+                self.update_kaden_json(response)
+
                 return self.create_reply_menu(COMMON_REPLY_EVENTS['SHOW_MENU'])
             else:
                 return self.create_reply_message(COMMON_REPLY_EVENTS['RETURN_TEXT'], COMMON_REPLY_EVENTS_WORDS['NOT_SHOW_MENU_WORD'])
@@ -229,17 +228,12 @@ class Event:
         if re.match(r'action=on.+', postback_data):
             selected_kadenId = postback_data[18:]
             kadenId = selected_kadenId
-            headers = {
-                'Content-Type': 'application/json'
-            }
-            requests.post(
-                self.target_url,
-                json.dumps({
-                    'kadenId': str(kadenId),
-                    'manipulateId': '1'
-                }),
-                headers=headers
-            )
+
+            response = self.request_to_index(manipulateId, kadenId)
+
+            # response情報を元にkaden.jsonの更新
+            # self.update_kaden_json(response)
+
             msg = self.create_manipulate_reply_message(POWER_ON, self.kaden_info[selected_kadenId]['name'])
             return self.create_reply_message(COMMON_REPLY_EVENTS['RETURN_TEXT'], msg)
 
@@ -247,15 +241,12 @@ class Event:
         elif re.match(r'action=off.+', postback_data):
             selected_kadenId = postback_data[19:]
             kadenId = selected_kadenId
-            headers = {'Content-Type': 'application/json'}
-            requests.post(
-                self.target_url,
-                json.dumps({
-                    'kadenId': str(kadenId),
-                    'manipulateId': '2'
-                }),
-                headers = headers
-            )
+
+            response = self.request_to_index(manipulateId, kadenId)
+
+            # response情報を元にkaden.jsonの更新
+            # self.update_kaden_json(response)
+
             msg = self.create_manipulate_reply_message(POWER_OFF, self.kaden_info[selected_kadenId]['name'])
             return self.create_reply_message(COMMON_REPLY_EVENTS['RETURN_TEXT'], msg)
 
@@ -273,16 +264,12 @@ class Event:
             selected_kadenId = postback_data[33:]
             kadenId = selected_kadenId
             timer_datetime = postback_params
-            headers = {'Content-Type': 'application/json'}
-            requests.post(
-                self.target_url,
-                json.dumps({
-                    'kadenId': str(kadenId),
-                    'timer_datetime': str(timer_datetime),
-                    'manipulateId': '3',
-                }),
-                headers = headers
-            )
+
+            response = self.request_to_index(manipulateId, kadenId, timer_datetime)
+
+            # response情報を元にkaden.jsonの更新
+            # self.update_kaden_json(response)
+
             params = param['params']['datetime']
             msg = self.create_manipulate_reply_message(TIMER_FROM, params, self.kaden_info[selected_kadenId]['name'])
             return self.create_reply_message(COMMON_REPLY_EVENTS['RETURN_TEXT'], msg)
@@ -292,16 +279,12 @@ class Event:
             selected_kadenId = postback_data[31:]
             kadenId = selected_kadenId
             timer_datetime = postback_params
-            headers = {'Content-Type': 'application/json'}
-            requests.post(
-                self.target_url ,
-                json.dumps({
-                    'kadenId': str(kadenId),
-                    'timer_datetime': str(timer_datetime),
-                    'manipulateId': '4',
-                }),
-                headers = headers
-            )
+
+            response = self.request_to_index(manipulateId, kadenId, timer_datetime)
+
+            # response情報を元にkaden.jsonの更新
+            # self.update_kaden_json(response)
+
             params = param['params']['datetime']
             msg = self.create_manipulate_reply_message(TIMER_TO, params, self.kaden_info[selected_kadenId]['name'])
             return self.create_reply_message(COMMON_REPLY_EVENTS['RETURN_TEXT'], msg)
@@ -315,6 +298,34 @@ class Event:
         else:
             res = args[0] + COMMON_REPLY_EVENTS_TEXT[event][0] + args[1] + COMMON_REPLY_EVENTS_TEXT[event][1]
         return res
+
+
+    # ラズパイのindexにrequestを投げる
+    ### len(args=1) => ステータス反映 manipulateIdのみ
+    ### len(args=2) => 電源系 manipulateId, kadenId
+    ### len(args=3) => タイマー系 manipulateId, kadenId, timer_datetime
+    def request_to_index(self, *args):
+
+        headers = {'Content-Type': 'application/json'}
+        data = {'manipulateId': str(args[0])}
+        if len(args) >= 2: data['kadenId'] = str(args[1])
+        if len(args) == 3: data['timer_datetime'] = str(args[2])
+        responses = requests.post(
+            self.target_url ,
+            json.dumps(data),
+            headers = headers
+        )
+        return responses
+
+
+    # index.pyから受け取ったresponsesでkaden.jsonを更新する
+    def update_kaden_json(self, responses):
+
+        data = responses.json()
+
+        with open('./tmp/kaden.json', 'w') as f:
+            json.dump(data, f, indent=4)
+
 
 
 class LineReplyMessage:
