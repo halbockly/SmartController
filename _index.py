@@ -51,7 +51,7 @@ def exec_switch(params):
 
 
 def exec_timer(params):
-    timer_class = Timer()
+    ti = Timer()
     return timer_class.timerSetting(params)
 
 

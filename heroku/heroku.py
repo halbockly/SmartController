@@ -691,13 +691,13 @@ class LineReplyMessage:
 def getNgrokuUrlToHeroku():
     print("GetHerokuUrlToHeroku START")
 
-    body = request.params.url
-    print("body:" + body)
+    url = request.params.url
 
-    inifile = configparser.ConfigParser()
-
-    inifile.add_section("ngrok")
-    inifile.set("ngrok", "url", body)
+    if url== "" :
+        print("url:" + url)
+        inifile = configparser.ConfigParser()
+        inifile.add_section("ngrok")
+        inifile.set("ngrok", "url", url)
 
     with open('./tmp/ngrokToHeroku.ini', 'w') as file:
         inifile.write(file)
@@ -723,7 +723,6 @@ def checkIniFile():
 
     file = open('./tmp/kaden.json', 'r')
     print(file)
-    file
 
     fileini = open('./tmp/ngrokToHeroku.ini', 'r')
     print(fileini)
