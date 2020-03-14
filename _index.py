@@ -4,6 +4,7 @@ import json
 import requests
 from _switch import Switch
 from _status import Status
+from _timer import Timer
 
 app = Bottle()
 
