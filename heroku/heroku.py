@@ -698,9 +698,8 @@ def getNgrokuUrlToHeroku():
         inifile = configparser.ConfigParser()
         inifile.add_section("ngrok")
         inifile.set("ngrok", "url", url)
-
-    with open('./tmp/ngrokToHeroku.ini', 'w') as file:
-        inifile.write(file)
+        with open('./tmp/ngrokToHeroku.ini', 'w') as file:
+            inifile.write(file)
 
     kadenJsonStr = request.params.file
     print("file:" + kadenJsonStr)

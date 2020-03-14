@@ -2,9 +2,13 @@ from bottle import Bottle, run, route, abort, request
 from crontab import CronTab
 import json
 import requests
+import logging
+
 from _switch import Switch
 from _status import Status
 from _timer import Timer
+import util.initLog as log
+import setNgrokUrlToHeroku
 
 app = Bottle()
 
@@ -56,4 +60,8 @@ def exec_timer(params):
 
 
 if __name__ == "__main__":
+    log.initLog()
+    setNgrokUrlToHeroku.execNgrok()
+
     app.run(host='localhost', port=8080, debug=True, reloader=True)
+
