@@ -1,4 +1,5 @@
 import requests
+import logging
 
 ##   kaden.json の設置パス（rootに置いてるのでそのまんま
 __KADEN_JSON_PATH__ = "kaden.json"
@@ -24,7 +25,7 @@ class SendHeroku:
     # Herokuに情報送信（NgrokURL有）
     #
     def sendHeroku(self,url):
-
+        logging.info("開始: NgrokのURL＋kaden.jsonをHerokuに連携")
         # kaden.jsonを一緒にアップロード
         f = open(__KADEN_JSON_PATH__, "r", encoding="utf-8")  # {'upload_file': open(__KADEN_JSON_PATH__, "rb")}
         self.kadenJsonFile = f.read()
@@ -37,12 +38,10 @@ class SendHeroku:
         print(__REQUEST_URL__ + ' status_code:' + str(response.status_code))
 
         if response.status_code != 200:
-            print("ERROR : STOP setNgrokUrlToHeroku")
-            sys.exit(-1)
+            logging.error("エラー : status_code:" + response.status_code + " NgrokのURL＋kaden.jsonをHerokuに連携")
 
             return False
         else:
-            print("SUCCESS : URL Send setNgrokUrlToHeroku")
-
+            logging.info("完了: NgrokのURL＋kaden.jsonをHerokuに連携")
             return True
 

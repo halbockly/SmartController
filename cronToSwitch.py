@@ -1,11 +1,13 @@
 # coding=utf-8
-from switch import Switch
+from _switch import Switch
 import json
 import sys
-
+import util.log as Log
 ###
 #    cronから実行するswitch.pyの入り口
 ###
+
+Log.initLog()
 
 #コマンドライン引数の取り出し。
 # args[1] kadenId
@@ -21,3 +23,4 @@ swc = Switch()
 swc.Switching({"kadenId":kadenId,"manipulateId":manipulateId})
 
 print("cronToSwitch.py end ")
+

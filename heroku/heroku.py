@@ -693,7 +693,7 @@ def getNgrokuUrlToHeroku():
 
     url = request.params.url
 
-    if url== "" :
+    if url != "" :
         print("url:" + url)
         inifile = configparser.ConfigParser()
         inifile.add_section("ngrok")
