@@ -45,9 +45,9 @@ class Switch:
         """事前確認。現在の家電の状態を見てremoteController.pyに命令を送るか決める"""
 
         nowStatus = self.st.checkStatusForSwitch(kadenId)         # ステータス確認依頼
-        if orderStatus == 1 and nowStatus == 1:     # 求める状態と現在の状態を比較
+        if orderStatus == "1" and nowStatus == "1":     # 求める状態と現在の状態を比較
             return False                            # 既に求める状態になっている⇒戻り値false
-        elif orderStatus == 2 and nowStatus == 0:
+        elif orderStatus == "2" and nowStatus == "0":
             return False                            # 既に求める状態になっている⇒戻り値false
         else:
             return True                             # 求める状態と現在の状態が異なる⇒戻り値true
