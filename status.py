@@ -23,7 +23,7 @@ class Status:
     # switch.pyから受け取ったidのステータスを取得して返すメソッド================================================
     """引数　：id（kadenId）"""
     """戻り値：resStatus（0 or 1、kaden.jsonで確認した対象のステータス）"""
-    def checkStatus(self, kadenId):
+    def checkStatusForSwitch(self, kadenId):
         loadRequestJson = self.getKadenStatus()              # kaden.JSONを取得
         resStatus = loadRequestJson[kadenId]['status']       # リクエストのidの['status']を取得する
         return resStatus                                # レスポンス( 0 or 1 )を送る
