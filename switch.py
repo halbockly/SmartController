@@ -13,7 +13,7 @@ from status import Status
 
 
 class Switch:
-    def __init__(self,):
+    def __init__(self):
         self.st = Status()
 
     # kadenIdとmanipulateIdで家電を操作するメソッド。戻り値としてお言葉がもらえる。=========================================
@@ -33,7 +33,7 @@ class Switch:
             result = self.kadenSwitching(kadenId)               # remoteController.pyへ赤外線送信依頼
             if result:                                          # 赤外線送信の成否
 
-                rewrite = st.changeStatusJson(kadenId)          # 成功：status.pyへのステータス書き換え依頼
+                rewrite = self.st.changeStatusJson(kadenId)          # 成功：status.pyへのステータス書き換え依頼
                 msg = "操作完了" if rewrite else "書換失敗"      # 書き換えの成否に応じてmsgをセット
                 return msg
             else:
@@ -44,7 +44,7 @@ class Switch:
     def priorConfirmation(self, kadenId, orderStatus):
         """事前確認。現在の家電の状態を見てremoteController.pyに命令を送るか決める"""
 
-        nowStatus = st.checkStatusForSwitch(kadenId)         # ステータス確認依頼
+        nowStatus = self.st.checkStatusForSwitch(kadenId)         # ステータス確認依頼
         if orderStatus == 1 and nowStatus == 1:     # 求める状態と現在の状態を比較
             return False                            # 既に求める状態になっている⇒戻り値false
         elif orderStatus == 2 and nowStatus == 0:
