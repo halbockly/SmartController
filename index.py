@@ -1,4 +1,4 @@
-coding=utf-8
+# coding=utf-8
 from bottle import Bottle, run, route, abort, request
 from crontab import CronTab
 import sys
