@@ -8,7 +8,7 @@ import logging
 from _switch import Switch
 from _status import Status
 from _timer import Timer
-import util.log as Log
+import util.Log as Log
 import setNgrokUrlToHeroku
 
 app = Bottle()
