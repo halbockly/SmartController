@@ -2,19 +2,23 @@
 from crontab import CronTab
 from switch import Switch
 import logging
+import datetime
+
 
 # Linuxのタスクマネージャー「cron」にタイマー予約をセットする
 # cronがもし落ちてたらetcで再起動させて対応する必要がある
 
 class Timer:
+    def __init__(self):
+        pass
+
     # ▼index.pyとのやり取り▼
     # index.pyから受け取った予約の命令をmakeorderに渡し、戻ってきた予約の成否をメッセージで返すメソッド=======================
     """引数　：param { kadenId:x, manipulateId:y }"""
     """戻り値：msg（文字列、処理結果を表す返答メッセージ）"""
-    def timerSetting(self, param):               # このメソッドを読んでもらえればタイマー予約します！多分
-        sw = Switch()
-        orderJson = sw.getRequestStatus(param)
-        result = self.makeOrder(orderJson)
+
+    def timerSetting(self, param):  # このメソッドを読んでもらえればタイマー予約します！多分
+        result = self.makeOrder(param)
         msg = "予約しました" if result == true else "予約失敗"
         return msg
 
@@ -22,11 +26,12 @@ class Timer:
     # timerSettingから受け取った予約をcronに書き込み、その成否を返すメソッド================================================
     """引数　：orderJson { kadenId:x, manipulateId:y }"""
     """戻り値：result（true/false、cronへの予約書き込みの成否）"""
-    def makeOrder(self, orderJson):              # switch.pyに飛ばすJSONを作り、勢いでcrontabも書いてしまうメソッド
+
+    def makeOrder(self, orderJson):  # switch.pyに飛ばすJSONを作り、勢いでcrontabも書いてしまうメソッド
         kadenId = orderJson['kadenId']
-        order = orderJson['manipulateId']        # 3:TimerON 4:TimerOFF
-        order = 1 if order == 3 else 2           # 1:ON 2:OFF    ※order=3なら1を、そうでないなら2をセットする
-        setTime = orderJson['timer_datetime']    # cronで命令を飛ばす日時　例）'2019-09-08T11:00'
+        order = orderJson['manipulateId']  # 3:TimerON 4:TimerOFF
+        order = 1 if order == 3 else 2  # 1:ON 2:OFF    ※order=3なら1を、そうでないなら2をセットする
+        setTime = orderJson['timer_datetime']  # cronで命令を飛ばす日時　例）'2019-09-08T11:00'
 
         cronWriteResult = True
         try:
@@ -34,25 +39,27 @@ class Timer:
                 "kadenId": kadenId,
                 "manipulateId": order,
             }
-            filename = kadenId + '_' + order + '_' + setTime + '.json'  # 指定日時になったらcrontabでswitch.pyに飛ばす命令＝JSONファイル（のファイル名）
-            f = open(filename, 'w')                  # 書き込みモードで上記ファイルを開く
-            json.dump(json_str, f, indent='\t')      # str を書き込む
+            # 指定日時になったらcrontabでswitch.pyに飛ばす命令＝JSONファイル（のファイル名）
+            filename = str(kadenId) + '_' + str(order) + '_' + setTime + '.json'
+            f = open(filename, 'w')  # 書き込みモードで上記ファイルを開く
+            f.write(str(json_str))        # str を書き込む
 
-            rsv_mnt = setTime.strftime('%M')         # 予定日時の分
-            rsv_hou = setTime.strftime('%H')         # 予定日時の時
-            rsv_day = setTime.strftime('%d')         # 予定日時の日
-            rsv_mon = setTime.strftime('%m')         # 予定日時の月
-            cron_string = '{} {} {} {} *'            # cronに設定する文字列のひな型
-            rsv_datatime = cron_string.format(rsv_mnt, rsv_hou, rsv_day, rsv_mon)        # 予定日時と命令をセット、文字列完成
+            setTime = datetime.datetime.strptime(setTime, "%Y-%m-%dT%H:%M")
+            rsv_mnt = setTime.strftime('%M')  # 予定日時の分
+            rsv_hou = setTime.strftime('%H')  # 予定日時の時
+            rsv_day = setTime.strftime('%d')  # 予定日時の日
+            rsv_mon = setTime.strftime('%m')  # 予定日時の月
+            cron_string = '{} {} {} {} *'  # cronに設定する文字列のひな型
+            rsv_datatime = cron_string.format(rsv_mnt, rsv_hou, rsv_day, rsv_mon)  # 予定日時と命令をセット、文字列完成
             rsv_command = 'python /home/switch.py'
-            tab_file = 'reserved.tab'                # 予定を書き込むファイル
+            tab_file = 'reserved.tab'  # 予定を書き込むファイル
 
             cc = CrontabControl()
-            cc.write_job(rsv_command, rsv_datatime, tab_file)   # crontabにjobを書き込む
-            cc.read_jobs(tabfile)                               # crontabに記録されたjobを読み込む
-            cc.monitor_start()                                  # crontabを監視する
+            cc.write_job(rsv_command, rsv_datatime, tab_file)  # crontabにjobを書き込む
+            cc.read_jobs(tab_file)  # crontabに記録されたjobを読み込む
+            cc.monitor_start(tab_file)  # crontabを監視する
 
-        except:
+        except(FileExistsError, FileNotFoundError):
             cronWriteResult = False
 
         return cronWriteResult
@@ -84,6 +91,8 @@ c.write_job(command, schedule, file)    # ファイルに書き込む
 c.read_jobs(file)                       # ファイルを読み込む（タスクスケジュールを読み込む）
 c.monitor_start(file)                   # タスクスケジュールの監視を開始
 """
+
+
 # ===================================
 class CrontabControl:
     def __init__(self):
@@ -117,7 +126,6 @@ class CrontabControl:
             # ログのファイル出力先を設定（4）
             fh = logging.FileHandler('test.log')
             logger.addHandler(fh)
-
 
 # ===================================
 # 現在日時の取得
