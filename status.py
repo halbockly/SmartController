@@ -1,23 +1,34 @@
 # coding=utf-8
 import json
 import codecs
+from util.sendHeroku import SendHeroku
 
 # kaden.jsonを読みこんだり書き換えたりする役割。
 # kaden.jsonは[ ((kadenId))1 : { name:"クーラー" , signal:"赤外線信号" status:0((0=off,1=on)) } ]の形での管理を想定。
 
 class Status:
+    def __init__(self):
+        pass
+
     JSON_FILE = "kaden.json"
 
-    # ▼index.py、switch.pyとのやり取り▼
-    # index.py(switch.py)から受け取ったidのステータスを取得して返すメソッド================================================
+    # ▼index.pyとのやり取り▼
+    # index.pyからの要求でkaden.jsonのデータを取得して返すメソッド================================================
+    """引数　：無し"""
+    """戻り値：loadRequestJson（kaden.jsonを開いて得たデータ）"""
+    def checkStatus(self):
+        loadRequestJson = self.getKadenStatus()              # kaden.JSONを取得
+        return loadRequestJson                                # レスポンス( 0 or 1 )を送る
+
+    # ▼switch.pyとのやり取り▼
+    # switch.pyから受け取ったidのステータスを取得して返すメソッド================================================
     """引数　：id（kadenId）"""
     """戻り値：resStatus（0 or 1、kaden.jsonで確認した対象のステータス）"""
-    def checkStatus(self, kadenId):
+    def checkStatusForSwitch(self, kadenId):
         loadRequestJson = self.getKadenStatus()              # kaden.JSONを取得
         resStatus = loadRequestJson[kadenId]['status']       # リクエストのidの['status']を取得する
         return resStatus                                # レスポンス( 0 or 1 )を送る
 
-    # ▼switch.pyとのやり取り▼
     # kaden.jsonを書き換えるメソッド=====================================================================================
     """引数　：id（kadenId）"""
     """戻り値：result（true/false、kaden.jsonの対象のステータスの書き換え成否）"""
@@ -35,6 +46,10 @@ class Status:
             new_json_file = open('kaden.json', 'w')             # kaden.jsonを書き込みたいファイルとして開く
             json.dump(loadRequestJson, new_json_file, indent='\t')   # kaden.jsonを上書き
             new_json_file.close()                               # 上書きしたファイルを閉じる
+
+            # Status更新が掛かったタイミングでHerokuのkaden.jsonを更新して貰う。
+            sh = SendHeroku()
+            sh.sendHerokuStatusUpdate()
 
         except (FileExistsError, FileNotFoundError):
             result = False                               # 何故か書き換えに失敗したらFalseを返す
