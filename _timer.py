@@ -6,7 +6,7 @@ import threading
 import time
 
 from crontab import CronTab as Crontab
-from _switch import Switch
+
 from datetime import datetime
 
 __SWITCH_COMMAND__ = "python3 cronToSwitch.py"
@@ -41,8 +41,7 @@ class Timer:
         kadenId = orderJson['kadenId']
         order = orderJson['manipulateId']  # 3:TimerON 4:TimerOFF
 
-        if (order != 1): # 1:ON 2:OFF    ※order=3なら1を、そうでないなら2をセットする
-            order = 1 if order == 3 else 2
+        order = "1" if order == "3" else "2"  # 1:ON 2:OFF    ※order=3なら1を、そうでないなら2をセットする
 
         strTime = orderJson['timer_datetime']  # cronで命令を飛ばす日時　例）'2019-09-08T11:00'
         setTime = datetime.strptime(strTime, '%Y-%m-%dT%H:%M')  # cronで命令を飛ばす日時　例）'2019-09-08T11:00'
@@ -64,7 +63,7 @@ class Timer:
             rsv_mon = setTime.strftime('%m')  # 予定日時の月
             cron_string = '{} {} {} {} *'  # cronに設定する文字列のひな型
             rsv_datatime = cron_string.format(rsv_mnt, rsv_hou, rsv_day, rsv_mon)  # 予定日時と命令をセット、文字列完成
-            rsv_command = __SWITCH_COMMAND__ + " " + str(kadenId) + " " + str(order)
+            rsv_command = __SWITCH_COMMAND__ + " '" + str(kadenId) + "' '" + str(order) + "'"
             tab_file = 'reserved.tab'  # 予定を書き込むファイル
             logging.info("タイマー　" + rsv_command + " " + rsv_datatime)
             cc = CrontabControl()
@@ -157,4 +156,5 @@ class CrontabControl:
 # input_gap = 30      # index.pyのリクエストから入力される「○分後」の○を右辺に。
 # gap_minute = datetime.timedelta(minutes = input_gap)        # 「○分」のデータにする。
 # dt_reserved = dt_now + gap_minute        # 現在日時(dt_now)と「○分」(gap_minute)を足して予定日時にする。
+
 
