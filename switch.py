@@ -51,11 +51,11 @@ class Switch:
 
         nowStatus = self.st.checkStatusForSwitch(kadenId)         # ステータス確認依頼
         if orderStatus == "1" and nowStatus == "1":     # 求める状態と現在の状態を比較
-            return False                            # 既に求める状態になっている⇒戻り値false
+            return True                            # 既に求める状態になっている⇒True
         elif orderStatus == "2" and nowStatus == "0":
-            return False                            # 既に求める状態になっている⇒戻り値false
+            return True                            # 既に求める状態になっている⇒戻り値True
         else:
-            return True                             # 求める状態と現在の状態が異なる⇒戻り値true
+            return False                             # 求める状態と現在の状態が異なる⇒戻り値False
 
     # kadenIdを引数にしてremoteController.pyに電源操作の命令を送るメソッド=================================================
     """引数　：kadenId"""
