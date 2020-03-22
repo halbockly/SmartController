@@ -21,6 +21,7 @@ __INDEXPY_URL__ = '/index'
 
 app = Bottle()
 
+SHOW_STATUS = 0
 POWER_ON = 1
 POWER_OFF = 2
 TIMER_FROM = 3
@@ -150,7 +151,7 @@ class Event:
             if message['text'] in show_menu_words:
 
                 # kaden.jsonの状態確認
-                response = self.request_to_index(manipulateId)
+                response = self.request_to_index(SHOW_STATUS)
 
                 # response情報を元にkaden.jsonの更新
                 self.update_kaden_json(response)
@@ -229,7 +230,7 @@ class Event:
             selected_kadenId = postback_data[18:]
             kadenId = selected_kadenId
 
-            response = self.request_to_index(manipulateId, kadenId)
+            response = self.request_to_index(POWER_ON, kadenId)
 
             # response情報を元にkaden.jsonの更新
             # self.update_kaden_json(response)
@@ -242,7 +243,7 @@ class Event:
             selected_kadenId = postback_data[19:]
             kadenId = selected_kadenId
 
-            response = self.request_to_index(manipulateId, kadenId)
+            response = self.request_to_index(POWER_OFF, kadenId)
 
             # response情報を元にkaden.jsonの更新
             # self.update_kaden_json(response)
@@ -265,7 +266,7 @@ class Event:
             kadenId = selected_kadenId
             timer_datetime = postback_params
 
-            response = self.request_to_index(manipulateId, kadenId, timer_datetime)
+            response = self.request_to_index(TIMER_FROM, kadenId, timer_datetime)
 
             # response情報を元にkaden.jsonの更新
             # self.update_kaden_json(response)
@@ -280,7 +281,7 @@ class Event:
             kadenId = selected_kadenId
             timer_datetime = postback_params
 
-            response = self.request_to_index(manipulateId, kadenId, timer_datetime)
+            response = self.request_to_index(TIMER_TO, kadenId, timer_datetime)
 
             # response情報を元にkaden.jsonの更新
             # self.update_kaden_json(response)
