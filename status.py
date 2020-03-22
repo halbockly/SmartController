@@ -1,6 +1,7 @@
 # coding=utf-8
 import json
 import codecs
+from util.sendHeroku import SendHeroku
 
 # kaden.jsonを読みこんだり書き換えたりする役割。
 # kaden.jsonは[ ((kadenId))1 : { name:"クーラー" , signal:"赤外線信号" status:0((0=off,1=on)) } ]の形での管理を想定。
@@ -12,7 +13,7 @@ class Status:
     JSON_FILE = "kaden.json"
 
     # ▼index.pyとのやり取り▼
-    # index.pyから受け取ったidのステータスを取得して返すメソッド================================================
+    # index.pyからの要求でkaden.jsonのデータを取得して返すメソッド================================================
     """引数　：無し"""
     """戻り値：loadRequestJson（kaden.jsonを開いて得たデータ）"""
     def checkStatus(self):
@@ -45,6 +46,10 @@ class Status:
             new_json_file = open('kaden.json', 'w')             # kaden.jsonを書き込みたいファイルとして開く
             json.dump(loadRequestJson, new_json_file, indent='\t')   # kaden.jsonを上書き
             new_json_file.close()                               # 上書きしたファイルを閉じる
+
+            # Status更新が掛かったタイミングでHerokuのkaden.jsonを更新して貰う。
+            sh = SendHeroku()
+            sh.sendHerokuStatusUpdate()
 
         except (FileExistsError, FileNotFoundError):
             result = False                               # 何故か書き換えに失敗したらFalseを返す
