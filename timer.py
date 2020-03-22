@@ -18,8 +18,8 @@ class Timer:
     """戻り値：msg（文字列、処理結果を表す返答メッセージ）"""
 
     def timerSetting(self, param):  # このメソッドを読んでもらえればタイマー予約します！多分
-        result = self.makeOrder(param)
-        msg = "予約しました" if result == true else "予約に失敗しました"
+        result = self.makeOrder(param)      # 返り値はboolean型
+        msg = "予約しました" if result else "予約に失敗しました"
         return msg
 
     # ▼cronとのやり取り▼
@@ -30,7 +30,7 @@ class Timer:
     def makeOrder(self, orderJson):  # switch.pyに飛ばすJSONを作り、勢いでcrontabも書いてしまうメソッド
         kadenId = orderJson['kadenId']
         order = orderJson['manipulateId']  # 3:TimerON 4:TimerOFF
-        order = 1 if order == 3 else 2  # 1:ON 2:OFF    ※order=3なら1を、そうでないなら2をセットする
+        order = "1" if order == "3" else "2"  # 1:ON 2:OFF    ※order=3なら1を、そうでないなら2をセットする
         setTime = orderJson['timer_datetime']  # cronで命令を飛ばす日時　例）'2019-09-08T11:00'
         cronWriteResult = True
 

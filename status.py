@@ -38,10 +38,15 @@ class Status:
         status = loadRequestJson[kadenId]['status']          # リクエストのkadenIdのステータスを取得
 
         try:
-            if status == 0:
-                loadRequestJson[kadenId]['status'] = 1           # ステータスを書き換え
-            elif status == 1:
-                loadRequestJson[kadenId]['status'] = 0           # ステータスを書き換え
+            if status == "0":
+                loadRequestJson[kadenId]['status'] = "1"           # ステータスを書き換え
+            elif status == "1":
+                loadRequestJson[kadenId]['status'] = "0"           # ステータスを書き換え
+
+            data = self.get_kaden_json()
+            data[self.kaden_id]['status'] = self.manipulate_id
+            with open(self.JSON_FILE, 'w') as f:
+                json.dump(data, f, indent='\t')
 
             new_json_file = open('kaden.json', 'w')             # kaden.jsonを書き込みたいファイルとして開く
             json.dump(loadRequestJson, new_json_file, indent='\t')   # kaden.jsonを上書き
