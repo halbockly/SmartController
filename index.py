@@ -7,6 +7,12 @@ from switch import Switch
 from timer import Timer
 from status import Status
 
+INT_0 = 0
+INT_1 = 1
+INT_2 = 2
+INT_3 = 3
+INT_4 = 4
+
 
 app = Bottle()
 
@@ -15,7 +21,7 @@ def ErrorCheckDeco(func):
     def check(): 
         params = request.json
         manipulateId = int(params['manipulateId'])
-        if manipulateId < 0 or manipulateId > 4:
+        if manipulateId < INT_0 or manipulateId > INT_4:
             msg = "存在しない命令です。"
             target_url = ''
             request.get(target_url, msg)
@@ -43,7 +49,7 @@ def index():
 
 
     #ステータス管理処理
-    if int(manipulateId) == 0:
+    if int(manipulateId) == INT_0:
         status_reqest = status_class.checkStatus (kadenId)
         
         # heroku.pyへ送信
@@ -52,7 +58,7 @@ def index():
         print('ステータス　=　' + status_reqest)
 
     #ONOFF処理
-    elif int(manipulateId) in [1, 2]:
+    elif int(manipulateId) in [INT_1, INT_2]:
         onOffData = params
         del onOffData['timerDatetime']
         print(onOffData)
@@ -64,7 +70,7 @@ def index():
         # request.get(target_url, switch_request)
 
     #タイマー処理
-    elif int(manipulateId) in [3, 4]:
+    elif int(manipulateId) in [INT_3, INT_4]:
         timer_class = Timer()      
         timer_request = timer_class.timerSetting(params) #kadenId manipulateId,timerDatetimeを渡す
         
