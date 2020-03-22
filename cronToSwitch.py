@@ -2,7 +2,7 @@
 from _switch import Switch
 import json
 import sys
-import util.log as Log
+import util.Log as Log
 ###
 #    cronから実行するswitch.pyの入り口
 ###
