@@ -68,7 +68,7 @@ class Timer:
             tab_file = 'reserved.tab'  # 予定を書き込むファイル
             logging.info("タイマー　" + rsv_command + " " + rsv_datatime)
             cc = CrontabControl()
-            cc.read_jobs(tab_file)
+            #cc.read_jobs(tab_file)
             cc.write_job(rsv_command, rsv_datatime, tab_file)  # crontabにjobを書き込む
 
             print(str(setTime) + " timerStart")

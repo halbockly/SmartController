@@ -26,24 +26,26 @@ def index():
 
     msg = None
     params = request.json
-
+    result = ""
     try:
         for key in exec_settings:
             if params["manipulateId"] in exec_settings[key]:
                 msg = eval(key)(params)
 
+        logging.info("SUCCESS")
         result = {
             "status": 200,
             "message": msg
         }
 
     except Exception as e:
+        logging.info("ERROR")
         result = {
             "status": 500,
             "message": e
         }
 
-    logging.info("LINE API⇒Herokuへ返信" + result)
+    logging.info("LINE API⇒Herokuへ返信")
     return json.dumps(result, ensure_ascii=False)
 
 
@@ -63,7 +65,7 @@ def exec_switch(params):
 def exec_timer(params):
     logging.info("リクエスト＝タイマー")
     ti = Timer()
-    return timer_class.timerSetting(params)
+    return ti.timerSetting(params)
 
 
 if __name__ == "__main__":
@@ -77,7 +79,8 @@ if __name__ == "__main__":
         sys.exit(-1)
 
     logging.info("Webサーバー待ち受け開始")
-    app.run(host='localhost', port=8080, debug=True, reloader=True) #reloader=falseでないととログ2回出ちゃうんだけど
+    app.run(host='localhost', port=8080, debug=True, reloader=False) #reloader=falseでないととログ2回出ちゃうんだけど
                                                                      #falseじゃだめ？
     logging.info("終了 : SmartController ")
+
 

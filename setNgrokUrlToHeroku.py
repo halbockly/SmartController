@@ -20,7 +20,7 @@ def execNgrok():
     ##   下記の値がURL
     __ADDR__ = "url="
     ##   ngrok起動コマンド
-    __CMD__ = './ngrok http 8080 --log=stdout'
+    __CMD__ = 'ngrok http 8080 --log=stdout'
 
     __ERR__ = 'ERR_NGROK_108'
 
