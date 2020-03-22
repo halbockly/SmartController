@@ -26,15 +26,18 @@ def index():
     #ステータス管理処理
     if manipulateId == 0:
         status_class = Status()
+        logging.info("リクエスト : ステータス管理処理")
         return  status_class.checkStatus (kadenId)
 
     #ONOFF処理
     elif manipulateId in [1, 2]:
         switch_class = Switch()
+        logging.info("リクエスト : ONOFF処理")
         return switch_class.switching(params) 
 
     #タイマー処理
     elif manipulateId in [3, 4]:
+        logging.info("リクエスト : タイマー処理")
         timer_class = Timer()     
         return timer_class.timerSetting(params)
 
