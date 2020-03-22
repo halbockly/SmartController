@@ -20,6 +20,7 @@ class Switch:
     """引数　：param { kadenId:x, manipulateId:y }"""
     """戻り値：msg（文字列、処理結果を表す返答メッセージ）"""
     def switching(self, param):                 # リクエストのJSON（{ kadenId:x, manipulateId:y }）を引数とする
+        logging.debug("開始 : ONOFF処理")
         kadenId = param["kadenId"]              # 操作したい家電のID
         orderStatus = param["manipulateId"]     # どう操作したいか（1:ONにしたい、2:OFFにしたい）
         # ※（3:ON予約、4:OFF予約）はindex.py⇒timer.pyの直通で処理
@@ -28,6 +29,7 @@ class Switch:
         if bool_status:                                             # 既に求める状態になっている場合
             on_off = "ON" if orderStatus == "1" else "OFF"          # status=1なら「ON」、=2なら「OFF」の文字列をセット
             msg = "既に" + on_off + "になっています"                 # 返答メッセージ
+            logging.debug("end switching :" + msg)
             return msg
         else:
             result = self.kadenSwitching(kadenId)               # remoteController.pyへ赤外線送信依頼
@@ -35,9 +37,11 @@ class Switch:
 
                 rewrite = self.st.changeStatusJson(kadenId)          # 成功：status.pyへのステータス書き換え依頼
                 msg = "操作完了" if rewrite else "書換失敗"      # 書き換えの成否に応じてmsgをセット
+                logging.debug("end switching :" + msg)
                 return msg
             else:
                 msg = "操作失敗"                                # 失敗：赤外線送信失敗メッセージをセット
+                logging.debug("end switching :" + msg)
                 return msg
 
     # ▼class内の処理用メソッド▼
