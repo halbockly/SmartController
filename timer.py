@@ -19,7 +19,7 @@ class Timer:
 
     def timerSetting(self, param):  # このメソッドを読んでもらえればタイマー予約します！多分
         result = self.makeOrder(param)
-        msg = "予約しました" if result == true else "予約失敗"
+        msg = "予約しました" if result == true else "予約に失敗しました"
         return msg
 
     # ▼cronとのやり取り▼
@@ -32,8 +32,8 @@ class Timer:
         order = orderJson['manipulateId']  # 3:TimerON 4:TimerOFF
         order = 1 if order == 3 else 2  # 1:ON 2:OFF    ※order=3なら1を、そうでないなら2をセットする
         setTime = orderJson['timer_datetime']  # cronで命令を飛ばす日時　例）'2019-09-08T11:00'
-
         cronWriteResult = True
+
         try:
             json_str = {
                 "kadenId": kadenId,
