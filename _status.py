@@ -1,6 +1,6 @@
 # coding=utf-8
 import json
-
+from util.sendHeroku import SendHeroku
 
 class Status:
 
@@ -21,6 +21,11 @@ class Status:
             data[self.kaden_id]['status'] = self.manipulate_id
             with open(self.JSON_FILE, 'w') as f:
                 json.dump(data, f, indent='\t')
+
+            # Status更新が掛かったタイミングでHerokuのkaden.jsonを更新して貰う。
+            sh = SendHeroku()
+            sh.sendHerokuStatusUpdate()
+
             result = True
         except Exception as e:
             raise e

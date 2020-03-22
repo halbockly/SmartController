@@ -22,10 +22,13 @@ class Timer:
     """戻り値：msg（文字列、処理結果を表す返答メッセージ）"""
 
     def timerSetting(self, param):  # このメソッドを読んでもらえればタイマー予約します！多分
+        logging.debug("開始 タイマー　パラメータ：" + json.dumps(param))
         # sw = Switch()
         # orderJson = sw.getRequestStatus(param)
         result = self.makeOrder(param)
-        msg = "予約しました" if result == "true" else "予約失敗"
+        msg = "予約しました" if result == True else "予約失敗"
+
+        logging.info("完了 タイマー　" + msg)
         return msg
 
     # ▼cronとのやり取り▼
@@ -63,17 +66,18 @@ class Timer:
             rsv_datatime = cron_string.format(rsv_mnt, rsv_hou, rsv_day, rsv_mon)  # 予定日時と命令をセット、文字列完成
             rsv_command = __SWITCH_COMMAND__ + " " + str(kadenId) + " " + str(order)
             tab_file = 'reserved.tab'  # 予定を書き込むファイル
-
+            logging.info("タイマー　" + rsv_command + " " + rsv_datatime)
             cc = CrontabControl()
-            cc.read_jobs(tab_file)
+            #cc.read_jobs(tab_file)
             cc.write_job(rsv_command, rsv_datatime, tab_file)  # crontabにjobを書き込む
 
             print(str(setTime) + " timerStart")
             # ここで行うとTimerの実行で止まってしまうので他所で行う。crontabに記録されたjobを読み込む
             cc.monitor_start(tab_file)  # crontabを監視する
-
+            logging.debug("タイマー : 監視開始")
         except Exception as e:
             cronWriteResult = False
+            logging.info("エラー：タイマー " + e)
             print(e)
 
         print("timerStart")
@@ -137,9 +141,6 @@ class CrontabControl:
         print("scheduling start")
 
         for result in self.cron.run_scheduler():
-            print("taima")
-            # ロギングの設定
-            logging.basicConfig(filename='timerLog.log', level=logging.INFO)
             # ログ出力
             logging.info(result + "タイマーが実行されました。")
             print(result + "タイマーが実行されました。")
