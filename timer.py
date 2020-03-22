@@ -51,7 +51,7 @@ class Timer:
             rsv_mon = setTime.strftime('%m')  # 予定日時の月
             cron_string = '{} {} {} {} *'  # cronに設定する文字列のひな型
             rsv_datatime = cron_string.format(rsv_mnt, rsv_hou, rsv_day, rsv_mon)  # 予定日時と命令をセット、文字列完成
-            rsv_command = 'python /home/switch.py'
+            rsv_command = 'python /home/switch.py + " " + str(kadenId) + " " + str(order)'
             tab_file = 'reserved.tab'  # 予定を書き込むファイル
 
             cc = CrontabControl()
