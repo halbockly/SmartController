@@ -32,14 +32,14 @@ def index():
             if params["manipulateId"] in exec_settings[key]:
                 msg = eval(key)(params)
 
-        logging.info("SUCCESS")
+        logging.debug("SUCCESS")
         result = {
             "status": 200,
             "message": msg
         }
 
     except Exception as e:
-        logging.info("ERROR")
+        logging.debug("ERROR")
         result = {
             "status": 500,
             "message": e
