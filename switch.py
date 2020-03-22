@@ -3,6 +3,7 @@ import json
 import requests
 from physical.remoteController import remoteController
 from status import Status
+import logging
 
 # 電源の入り切りをする子
 # と言っても、受け取ったリクエストをremoteController.pyに横流しするだけ
