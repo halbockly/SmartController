@@ -264,30 +264,30 @@ class Event:
         elif re.match(r'.*from.*', postback_data):
             selected_kadenId = postback_data[33:]
             kadenId = selected_kadenId
-            timer_datetime = postback_params
+            timer_datetime = param['params']['datetime']
+            print("入タイマー : " + timer_datetime)
 
             response = self.request_to_index(TIMER_FROM, kadenId, timer_datetime)
 
             # response情報を元にkaden.jsonの更新
             # self.update_kaden_json(response)
 
-            params = param['params']['datetime']
-            msg = self.create_manipulate_reply_message(TIMER_FROM, params, self.kaden_info[selected_kadenId]['name'])
+            msg = self.create_manipulate_reply_message(TIMER_FROM, timer_datetime, self.kaden_info[selected_kadenId]['name'])
             return self.create_reply_message(COMMON_REPLY_EVENTS['RETURN_TEXT'], msg)
 
         # 切タイマーの画面
         elif re.match(r'.*to.*', postback_data):
             selected_kadenId = postback_data[31:]
             kadenId = selected_kadenId
-            timer_datetime = postback_params
+            timer_datetime = param['params']['datetime']
+            print("切タイマー : " + timer_datetime)
 
             response = self.request_to_index(TIMER_TO, kadenId, timer_datetime)
 
             # response情報を元にkaden.jsonの更新
             # self.update_kaden_json(response)
 
-            params = param['params']['datetime']
-            msg = self.create_manipulate_reply_message(TIMER_TO, params, self.kaden_info[selected_kadenId]['name'])
+            msg = self.create_manipulate_reply_message(TIMER_TO, timer_datetime, self.kaden_info[selected_kadenId]['name'])
             return self.create_reply_message(COMMON_REPLY_EVENTS['RETURN_TEXT'], msg)
 
 
