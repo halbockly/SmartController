@@ -6,10 +6,21 @@ import codecs
 # kaden.jsonは[ ((kadenId))1 : { name:"クーラー" , signal:"赤外線信号" status:0((0=off,1=on)) } ]の形での管理を想定。
 
 class Status:
+    def __init__(self):
+        pass
+
     JSON_FILE = "kaden.json"
 
-    # ▼index.py、switch.pyとのやり取り▼
-    # index.py(switch.py)から受け取ったidのステータスを取得して返すメソッド================================================
+    # ▼index.pyとのやり取り▼
+    # index.pyから受け取ったidのステータスを取得して返すメソッド================================================
+    """引数　：無し"""
+    """戻り値：loadRequestJson（kaden.jsonを開いて得たデータ）"""
+    def checkStatus(self):
+        loadRequestJson = self.getKadenStatus()              # kaden.JSONを取得
+        return loadRequestJson                                # レスポンス( 0 or 1 )を送る
+
+    # ▼switch.pyとのやり取り▼
+    # switch.pyから受け取ったidのステータスを取得して返すメソッド================================================
     """引数　：id（kadenId）"""
     """戻り値：resStatus（0 or 1、kaden.jsonで確認した対象のステータス）"""
     def checkStatus(self, kadenId):
@@ -17,7 +28,6 @@ class Status:
         resStatus = loadRequestJson[kadenId]['status']       # リクエストのidの['status']を取得する
         return resStatus                                # レスポンス( 0 or 1 )を送る
 
-    # ▼switch.pyとのやり取り▼
     # kaden.jsonを書き換えるメソッド=====================================================================================
     """引数　：id（kadenId）"""
     """戻り値：result（true/false、kaden.jsonの対象のステータスの書き換え成否）"""
