@@ -154,7 +154,7 @@ class Event:
                 response = self.request_to_index(SHOW_STATUS)
 
                 # response情報を元にkaden.jsonの更新
-                self.update_kaden_json(response)
+                # self.update_kaden_json(response)
 
                 return self.create_reply_menu(COMMON_REPLY_EVENTS['SHOW_MENU'])
             else:
@@ -320,12 +320,12 @@ class Event:
 
 
     # index.pyから受け取ったresponsesでkaden.jsonを更新する
-    def update_kaden_json(self, responses):
-
-        data = responses.json()
-
-        with open('./tmp/kaden.json', 'w') as f:
-            json.dump(data, f, indent=4)
+    # def update_kaden_json(self, responses):
+    #
+    #     data = responses.json()
+    #
+    #     with open('./tmp/kaden.json', 'w') as f:
+    #         json.dump(data, f, indent=4)
 
 
 
@@ -375,49 +375,49 @@ class LineReplyMessage:
                     "aspectRatio": "20:13",
                     "aspectMode": "cover"
                 },
-            "body": {
-            "type": "box",
-            "layout": "vertical",
-            "contents": [
-                {
-                    "type": "text",
-                    "text": "Home Appliances Controller",
-                    "weight": "bold",
-                    "size": "lg"
+                "body": {
+                    "type": "box",
+                    "layout": "vertical",
+                    "contents": [
+                        {
+                            "type": "text",
+                            "text": "Home Appliances Controller",
+                            "weight": "bold",
+                            "size": "lg"
+                        }
+                    ]
+                },
+                "footer": {
+                    "type": "box",
+                    "layout": "vertical",
+                    "spacing": "md",
+                    "contents": [
+                        {
+                            "type": "button",
+                            "style": "primary",
+                            "height": "sm",
+                            "color": "#ff7f50",
+                            "action": {
+                                "type": "postback",
+                                "label": "Manipulate",
+                                "data": "select=manipulate"
+                            }
+                        },
+                        {
+                            "type": "button",
+                            "style": "secondary",
+                            "height": "sm",
+                            "color": "#e6e6fa",
+                            "action": {
+                                "type": "postback",
+                                "label": "Show Status",
+                                "data": "select=status"
+                            }
+                        }
+                    ]
                 }
-            ]
-            },
-            "footer": {
-                "type": "box",
-                "layout": "vertical",
-                "spacing": "md",
-                "contents": [
-                    {
-                        "type": "button",
-                        "style": "primary",
-                        "height": "sm",
-                        "color": "#ff7f50",
-                        "action": {
-                            "type": "postback",
-                            "label": "Manipulate",
-                            "data": "select=manipulate"
-                        }
-                    },
-                    {
-                        "type": "button",
-                        "style": "secondary",
-                        "height": "sm",
-                        "color": "#e6e6fa",
-                        "action": {
-                            "type": "postback",
-                            "label": "Show Status",
-                            "data": "select=status"
-                        }
-                    }
-                ]
             }
         }
-    }
 
     @staticmethod
     def manipulate_kaden_menu(kaden_info):
