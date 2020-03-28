@@ -27,7 +27,7 @@ def index():
     if manipulateId == 0:
         status_class = Status()
         logging.info("リクエスト : ステータス管理処理")
-        return  status_class.checkStatus (kadenId)
+        return  status_class.checkStatus ()
 
     #ONOFF処理
     elif manipulateId in [1, 2]:
